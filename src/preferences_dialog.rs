@@ -123,7 +123,7 @@ fn choice_row<T: Copy + PartialEq + 'static>(
 
 fn page(title: &str, icon: &str, groups: &[adw::PreferencesGroup]) -> adw::PreferencesPage {
     let page = adw::PreferencesPage::builder()
-        .title(title)
+        .title(t(title))
         .icon_name(icon)
         .build();
     for group in groups {
