@@ -5,6 +5,7 @@ use std::rc::Rc;
 
 use cef::*;
 
+use super::context_menu::{MenuAnswer, MenuRequest, read_model, trim_model};
 use super::cursor::css_name;
 use super::download::{DownloadControl, DownloadProgress};
 use super::file_dialog::{FileAnswer, FileRequest};
@@ -59,6 +60,10 @@ wrap_client! {
 
         fn download_handler(&self) -> Option<DownloadHandler> {
             Some(PageDownloads::new(Rc::clone(&self.host)))
+        }
+
+        fn context_menu_handler(&self) -> Option<ContextMenuHandler> {
+            Some(PageMenus::new(Rc::clone(&self.host)))
         }
 
         fn dialog_handler(&self) -> Option<DialogHandler> {
@@ -312,6 +317,33 @@ wrap_request_handler! {
             }
         }
 
+        fn auth_credentials(
+            &self,
+            _browser: Option<&mut Browser>,
+            _origin_url: Option<&CefString>,
+            is_proxy: c_int,
+            host: Option<&CefString>,
+            _port: c_int,
+            _realm: Option<&CefString>,
+            _scheme: Option<&CefString>,
+            callback: Option<&mut AuthCallback>,
+        ) -> c_int {
+            let Some(callback) = callback.filter(|_| is_proxy == 1) else {
+                return 0;
+            };
+            match self.host.proxy_credentials() {
+                Some((username, password)) => {
+                    tracing::info!(proxy = %text(host), "answering proxy authentication");
+                    callback.cont(
+                        Some(&CefString::from(username.as_str())),
+                        Some(&CefString::from(password.as_str())),
+                    );
+                    1
+                }
+                None => 0,
+            }
+        }
+
         fn on_open_urlfrom_tab(
             &self,
             _browser: Option<&mut Browser>,
@@ -327,15 +359,13 @@ wrap_request_handler! {
 
         fn on_render_process_terminated(
             &self,
-            browser: Option<&mut Browser>,
+            _browser: Option<&mut Browser>,
             status: TerminationStatus,
             error_code: c_int,
             _error_string: Option<&CefString>,
         ) {
-            tracing::error!(?status, error_code, "page process terminated, reloading");
-            if let Some(browser) = browser {
-                browser.reload();
-            }
+            tracing::error!(?status, error_code, "page process terminated");
+            self.host.page_crashed();
         }
     }
 }
@@ -466,6 +496,23 @@ wrap_load_handler! {
                 self.host.page_loaded();
             }
         }
+
+        fn on_load_error(
+            &self,
+            _browser: Option<&mut Browser>,
+            frame: Option<&mut Frame>,
+            error_code: Errorcode,
+            error_text: Option<&CefString>,
+            failed_url: Option<&CefString>,
+        ) {
+            let main_frame = frame.is_some_and(|frame| frame.is_main() == 1);
+            if !main_frame || error_code == Errorcode::ABORTED {
+                return;
+            }
+            let description = text(error_text);
+            tracing::warn!(address = %text(failed_url), %description, "page failed to load");
+            self.host.load_failed(&description);
+        }
     }
 }
 
@@ -498,6 +545,52 @@ wrap_dialog_handler! {
             );
             self.host
                 .choose_files(request, FileAnswer::new(callback.clone()));
+            1
+        }
+    }
+}
+
+wrap_context_menu_handler! {
+    struct PageMenus {
+        host: Rc<dyn PageHost>,
+    }
+
+    impl ContextMenuHandler {
+        fn on_before_context_menu(
+            &self,
+            _browser: Option<&mut Browser>,
+            _frame: Option<&mut Frame>,
+            _params: Option<&mut ContextMenuParams>,
+            model: Option<&mut MenuModel>,
+        ) {
+            if let Some(model) = model {
+                trim_model(model);
+            }
+        }
+
+        fn run_context_menu(
+            &self,
+            _browser: Option<&mut Browser>,
+            _frame: Option<&mut Frame>,
+            params: Option<&mut ContextMenuParams>,
+            model: Option<&mut MenuModel>,
+            callback: Option<&mut RunContextMenuCallback>,
+        ) -> c_int {
+            let (Some(params), Some(model), Some(callback)) = (params, model, callback) else {
+                return 0;
+            };
+            let entries = read_model(model);
+            if entries.is_empty() {
+                callback.cancel();
+                return 1;
+            }
+            let request = MenuRequest {
+                x: params.xcoord(),
+                y: params.ycoord(),
+                entries,
+            };
+            self.host
+                .show_context_menu(request, MenuAnswer::new(callback.clone()));
             1
         }
     }

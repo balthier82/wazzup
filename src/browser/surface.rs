@@ -13,8 +13,9 @@ use gtk::prelude::*;
 use super::canvas::BrowserCanvas;
 use super::input;
 use crate::engine::{
-    DownloadControl, DownloadProgress, FileAnswer, FileRequest, MediaAccess, PageClient, PageHost,
-    PageMessage, PaintLayer, PixelFrame, PopupArea, Viewport, emulate_color_scheme,
+    DownloadControl, DownloadProgress, FileAnswer, FileRequest, MediaAccess, MenuAnswer,
+    MenuRequest, PageClient, PageHost, PageMessage, PaintLayer, PixelFrame, PopupArea, Viewport,
+    emulate_color_scheme,
 };
 
 const FRAME_RATE: i32 = 60;
@@ -38,6 +39,12 @@ pub trait SurfaceObserver {
     fn files_allowed(&self) -> bool {
         true
     }
+    fn connection_changed(&self, _online: bool) {}
+    fn proxy_credentials(&self) -> Option<(String, String)> {
+        None
+    }
+    fn page_crashed(&self) {}
+    fn load_failed(&self, _description: &str) {}
 }
 
 pub struct SurfaceCore {
@@ -173,6 +180,7 @@ impl PageHost for SurfaceCore {
                 observer.notification_posted(id, &title, &body);
             }
             PageMessage::NotificationClosed { id } => observer.notification_withdrawn(id),
+            PageMessage::Connection { online } => observer.connection_changed(online),
         }
     }
 
@@ -209,6 +217,26 @@ impl PageHost for SurfaceCore {
         if let Some(observer) = self.observer() {
             observer.download_progress(progress, control);
         }
+    }
+
+    fn proxy_credentials(&self) -> Option<(String, String)> {
+        self.observer()?.proxy_credentials()
+    }
+
+    fn page_crashed(&self) {
+        if let Some(observer) = self.observer() {
+            observer.page_crashed();
+        }
+    }
+
+    fn load_failed(&self, description: &str) {
+        if let Some(observer) = self.observer() {
+            observer.load_failed(description);
+        }
+    }
+
+    fn show_context_menu(&self, request: MenuRequest, answer: MenuAnswer) {
+        super::context_menu::present(&self.canvas, &request, answer);
     }
 
     fn choose_files(&self, request: FileRequest, answer: FileAnswer) {

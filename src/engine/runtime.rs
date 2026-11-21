@@ -4,6 +4,7 @@ use cef::args::Args;
 use cef::{CefString, LogSeverity, Settings, api_hash, execute_process, initialize, shutdown, sys};
 use gtk::glib;
 
+use super::options::EngineOptions;
 use super::process::WazzupApp;
 use super::pump::MessagePump;
 use crate::config::{APP_ID, Profile};
@@ -11,7 +12,7 @@ use crate::config::{APP_ID, Profile};
 pub fn run_child_process() -> Option<u8> {
     let _ = api_hash(sys::CEF_API_VERSION_LAST, 0);
     let args = Args::new();
-    let mut app = WazzupApp::new();
+    let mut app = WazzupApp::new(Vec::new());
     let code = execute_process(
         Some(args.as_main_args()),
         Some(&mut app),
@@ -25,13 +26,16 @@ pub struct Engine {
 }
 
 impl Engine {
-    pub fn start() -> Result<Self, String> {
+    pub fn start(options: &EngineOptions) -> Result<Self, String> {
         let args = Args::new();
-        let mut app = WazzupApp::new();
+        let mut app = WazzupApp::new(options.switches());
         let layout = RuntimeLayout::discover();
         layout
             .prepare()
             .map_err(|error| format!("cannot create profile folders: {error}"))?;
+        if let Err(error) = options.write_profile_preferences(&layout.root_dir) {
+            tracing::warn!(%error, "cannot update engine preferences");
+        }
         let settings = layout.settings();
         let started = initialize(
             Some(args.as_main_args()),

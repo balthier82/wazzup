@@ -11,6 +11,10 @@ mod lock;
 mod navigation;
 mod preferences;
 mod preferences_dialog;
+mod proxy;
+mod recovery;
+mod spelling;
+mod startup_guard;
 mod tray;
 mod unread;
 mod window;
@@ -40,14 +44,19 @@ fn main() -> ExitCode {
         }
     }
 
-    let engine = match engine::Engine::start() {
+    let guard = std::rc::Rc::new(startup_guard::StartupGuard::arm());
+    let options = application.engine_options(guard.needs_software_rendering());
+    let engine = match engine::Engine::start(&options) {
         Ok(engine) => engine,
         Err(reason) => {
             eprintln!("wazzup: {reason}");
             return ExitCode::FAILURE;
         }
     };
+    let settled = std::rc::Rc::clone(&guard);
+    gtk::glib::timeout_add_seconds_local_once(30, move || settled.settle());
     let status = application.run();
+    guard.settle();
     engine.shutdown();
     exit_code(status)
 }

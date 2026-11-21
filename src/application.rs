@@ -8,9 +8,11 @@ use gtk::glib;
 use crate::chat_link::ChatLink;
 use crate::config::Profile;
 use crate::desktop::{Autostart, XdgAutostart};
+use crate::engine::{EngineOptions, ProxySwitch};
 use crate::launch::LaunchRequest;
 use crate::lock::AppLock;
 use crate::preferences::{PreferenceStore, Preferences, ThemeChoice};
+use crate::proxy::{ProxyPassword, ProxyRoute};
 use crate::tray::{TrayCommand, TrayIcon};
 use crate::window::{MainWindow, Shared};
 
@@ -20,6 +22,7 @@ pub struct WazzupApplication {
     store: Rc<PreferenceStore>,
     tray: Rc<RefCell<TrayIcon>>,
     lock: Rc<AppLock>,
+    proxy_password: Rc<OnceCell<Rc<ProxyPassword>>>,
     tray_commands: async_channel::Receiver<TrayCommand>,
 }
 
@@ -36,10 +39,31 @@ impl WazzupApplication {
             store: PreferenceStore::open(),
             tray: Rc::new(RefCell::new(tray)),
             lock: AppLock::open(),
+            proxy_password: Rc::default(),
             tray_commands,
         };
         application.wire();
         application
+    }
+
+    pub fn engine_options(&self, gpu_failed_before: bool) -> EngineOptions {
+        let preferences = self.store.snapshot();
+        if gpu_failed_before && preferences.hardware_acceleration {
+            tracing::warn!("previous starts failed, switching to software rendering");
+            self.store
+                .update(|preferences| preferences.hardware_acceleration = false);
+        }
+        let proxy = match preferences.proxy.route() {
+            ProxyRoute::System => ProxySwitch::System,
+            ProxyRoute::Direct => ProxySwitch::Direct,
+            ProxyRoute::Through(server) => ProxySwitch::Server(server),
+        };
+        EngineOptions {
+            proxy,
+            spell_check: preferences.spell_check,
+            spell_languages: preferences.spell_languages,
+            software_rendering: gpu_failed_before || !preferences.hardware_acceleration,
+        }
     }
 
     pub fn register(&self) -> Result<bool, glib::Error> {
@@ -54,7 +78,9 @@ impl WazzupApplication {
     fn wire(&self) {
         let store = Rc::clone(&self.store);
         let tray = Rc::clone(&self.tray);
+        let password = Rc::clone(&self.proxy_password);
         self.inner.connect_startup(move |_| {
+            password.get_or_init(ProxyPassword::load);
             let preferences = store.snapshot();
             apply_theme(&preferences);
             sync_autostart(preferences.launch_at_login);
@@ -76,6 +102,7 @@ impl WazzupApplication {
         let store = Rc::clone(&self.store);
         let tray = Rc::clone(&self.tray);
         let lock = Rc::clone(&self.lock);
+        let password = Rc::clone(&self.proxy_password);
         self.inner
             .connect_command_line(move |application, command_line| {
                 let arguments: Vec<String> = command_line
@@ -85,10 +112,12 @@ impl WazzupApplication {
                     .map(|argument| argument.to_string_lossy().into_owned())
                     .collect();
                 let request = LaunchRequest::parse(&arguments);
+                let proxy_password = password.get_or_init(ProxyPassword::load);
                 let shared = Shared {
                     store: &store,
                     lock: &lock,
                     tray: &tray,
+                    proxy_password,
                 };
                 handle(application, &window, &shared, &request, command_line);
                 glib::ExitCode::SUCCESS

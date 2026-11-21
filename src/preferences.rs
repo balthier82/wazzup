@@ -6,6 +6,7 @@ use gtk::glib;
 use serde::{Deserialize, Serialize};
 
 use crate::config::{APP_ID, Profile};
+use crate::proxy::ProxySettings;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -62,6 +63,46 @@ impl Veil {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct WindowSize {
+    pub width: i32,
+    pub height: i32,
+    pub maximized: bool,
+}
+
+impl Default for WindowSize {
+    fn default() -> Self {
+        Self {
+            width: 1200,
+            height: 820,
+            maximized: false,
+        }
+    }
+}
+
+impl WindowSize {
+    pub const MINIMUM_WIDTH: i32 = 480;
+    pub const MINIMUM_HEIGHT: i32 = 400;
+
+    pub fn sanitized(self) -> Self {
+        let fallback = Self::default();
+        Self {
+            width: if self.width >= Self::MINIMUM_WIDTH {
+                self.width
+            } else {
+                fallback.width
+            },
+            height: if self.height >= Self::MINIMUM_HEIGHT {
+                self.height
+            } else {
+                fallback.height
+            },
+            maximized: self.maximized,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 #[allow(clippy::struct_excessive_bools)]
@@ -82,6 +123,11 @@ pub struct Preferences {
     pub allow_camera: bool,
     pub allow_screen_sharing: bool,
     pub veil: Veil,
+    pub spell_check: bool,
+    pub spell_languages: Vec<String>,
+    pub proxy: ProxySettings,
+    pub hardware_acceleration: bool,
+    pub window: WindowSize,
 }
 
 impl Default for Preferences {
@@ -103,6 +149,11 @@ impl Default for Preferences {
             allow_camera: true,
             allow_screen_sharing: true,
             veil: Veil::Off,
+            spell_check: true,
+            spell_languages: crate::spelling::default_languages(),
+            proxy: ProxySettings::default(),
+            hardware_acceleration: true,
+            window: WindowSize::default(),
         }
     }
 }
@@ -179,7 +230,24 @@ impl PreferenceStore {
 
 #[cfg(test)]
 mod tests {
-    use super::{CloseAction, NotificationDetail, Preferences, ThemeChoice, Veil};
+    use super::{CloseAction, NotificationDetail, Preferences, ThemeChoice, Veil, WindowSize};
+
+    #[test]
+    fn rejects_unusable_window_sizes() {
+        let tiny = WindowSize {
+            width: 10,
+            height: 5000,
+            maximized: true,
+        };
+        assert_eq!(
+            tiny.sanitized(),
+            WindowSize {
+                width: 1200,
+                height: 5000,
+                maximized: true
+            }
+        );
+    }
 
     #[test]
     fn veil_levels_grow() {

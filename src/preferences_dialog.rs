@@ -6,6 +6,7 @@ use crate::lock::{AppLock, MINIMUM_LENGTH, PasscodeProblem};
 use crate::preferences::{
     CloseAction, NotificationDetail, PreferenceStore, ThemeChoice, TrayStyle, Veil,
 };
+use crate::proxy::{ProxyKind, ProxyMode, ProxyPassword};
 
 const THEMES: [(ThemeChoice, &str); 3] = [
     (ThemeChoice::System, "Follow system"),
@@ -25,6 +26,17 @@ const VEILS: [(Veil, &str); 4] = [
     (Veil::Strong, "Strong"),
 ];
 
+const RESTART_NOTE: &str = "Changes apply the next time Wazzup starts.";
+
+const PROXY_MODES: [(ProxyMode, &str); 3] = [
+    (ProxyMode::System, "Use system settings"),
+    (ProxyMode::Direct, "No proxy"),
+    (ProxyMode::Manual, "Manual"),
+];
+
+const PROXY_KINDS: [(ProxyKind, &str); 2] =
+    [(ProxyKind::Http, "HTTP"), (ProxyKind::Socks5, "SOCKS5")];
+
 const IDLE_MINUTES: [(u32, &str); 6] = [
     (0, "Never"),
     (1, "After 1 minute"),
@@ -40,7 +52,11 @@ const DETAILS: [(NotificationDetail, &str); 3] = [
     (NotificationDetail::Nothing, "Only “New message”"),
 ];
 
-pub fn build(store: &Rc<PreferenceStore>, lock: &Rc<AppLock>) -> adw::PreferencesDialog {
+pub fn build(
+    store: &Rc<PreferenceStore>,
+    lock: &Rc<AppLock>,
+    password: &Rc<ProxyPassword>,
+) -> adw::PreferencesDialog {
     let dialog = adw::PreferencesDialog::builder()
         .title("Preferences")
         .search_enabled(false)
@@ -49,6 +65,7 @@ pub fn build(store: &Rc<PreferenceStore>, lock: &Rc<AppLock>) -> adw::Preference
     dialog.add(&appearance_page(store));
     dialog.add(&notifications_page(store));
     dialog.add(&privacy_page(store, lock));
+    dialog.add(&network_page(store, password));
     dialog
 }
 
@@ -152,15 +169,78 @@ fn general_page(store: &Rc<PreferenceStore>) -> adw::PreferencesPage {
     page(
         "General",
         "preferences-system-symbolic",
-        &[group(
-            "Behaviour",
-            &[
-                background.upcast_ref(),
-                start_hidden.upcast_ref(),
-                login.upcast_ref(),
-            ],
-        )],
+        &[
+            group(
+                "Behaviour",
+                &[
+                    background.upcast_ref(),
+                    start_hidden.upcast_ref(),
+                    login.upcast_ref(),
+                ],
+            ),
+            spelling_group(store),
+            advanced_group(store),
+        ],
     )
+}
+
+fn advanced_group(store: &Rc<PreferenceStore>) -> adw::PreferencesGroup {
+    let acceleration = switch_row(
+        store,
+        "Hardware acceleration",
+        "Turn off if the window stays black or flickers",
+        |preferences| preferences.hardware_acceleration,
+        |preferences, active| preferences.hardware_acceleration = active,
+    );
+    let advanced = group("Advanced", &[acceleration.upcast_ref()]);
+    advanced.set_description(Some(RESTART_NOTE));
+    advanced
+}
+
+fn spelling_group(store: &Rc<PreferenceStore>) -> adw::PreferencesGroup {
+    let enabled = switch_row(
+        store,
+        "Check spelling",
+        "Underline mistakes while you type",
+        |preferences| preferences.spell_check,
+        |preferences, active| preferences.spell_check = active,
+    );
+    let languages = adw::ExpanderRow::builder()
+        .title("Languages")
+        .subtitle("Right-click a highlighted word for suggestions")
+        .build();
+    let chosen = store.snapshot().spell_languages;
+    for (code, name) in crate::spelling::DICTIONARIES {
+        let check = gtk::CheckButton::builder()
+            .active(chosen.iter().any(|language| language == code))
+            .valign(gtk::Align::Center)
+            .build();
+        let row = adw::ActionRow::builder()
+            .title(name)
+            .activatable_widget(&check)
+            .build();
+        row.add_prefix(&check);
+        let store = Rc::clone(store);
+        check.connect_toggled(move |check| {
+            let active = check.is_active();
+            store.update(|preferences| {
+                preferences
+                    .spell_languages
+                    .retain(|language| language != code);
+                if active {
+                    preferences.spell_languages.push(code.to_owned());
+                }
+            });
+        });
+        languages.add_row(&row);
+    }
+    enabled
+        .bind_property("active", &languages, "sensitive")
+        .sync_create()
+        .build();
+    let spelling = group("Spelling", &[enabled.upcast_ref(), languages.upcast_ref()]);
+    spelling.set_description(Some(RESTART_NOTE));
+    spelling
 }
 
 fn appearance_page(store: &Rc<PreferenceStore>) -> adw::PreferencesPage {
@@ -472,4 +552,110 @@ fn explain_problem(anchor: &gtk::Button, problem: PasscodeProblem) {
         .build();
     dialog.add_response("ok", "OK");
     dialog.present(Some(anchor));
+}
+
+fn text_row(
+    store: &Rc<PreferenceStore>,
+    title: &str,
+    read: fn(&crate::preferences::Preferences) -> String,
+    write: fn(&mut crate::preferences::Preferences, String),
+) -> adw::EntryRow {
+    let row = adw::EntryRow::builder()
+        .title(title)
+        .text(read(&store.snapshot()))
+        .show_apply_button(true)
+        .build();
+    let store = Rc::clone(store);
+    row.connect_apply(move |row| {
+        let value = row.text().trim().to_owned();
+        store.update(|preferences| write(preferences, value));
+    });
+    row
+}
+
+fn network_page(store: &Rc<PreferenceStore>, password: &Rc<ProxyPassword>) -> adw::PreferencesPage {
+    let mode = choice_row(
+        store,
+        "Proxy",
+        &PROXY_MODES,
+        |preferences| preferences.proxy.mode,
+        |preferences, mode| preferences.proxy.mode = mode,
+    );
+    let kind = choice_row(
+        store,
+        "Type",
+        &PROXY_KINDS,
+        |preferences| preferences.proxy.kind,
+        |preferences, kind| preferences.proxy.kind = kind,
+    );
+    let host = text_row(
+        store,
+        "Server",
+        |preferences| preferences.proxy.host.clone(),
+        |preferences, host| preferences.proxy.host = host,
+    );
+    let port = adw::SpinRow::with_range(1.0, 65535.0, 1.0);
+    port.set_title("Port");
+    port.set_value(f64::from(store.snapshot().proxy.port));
+    {
+        let store = Rc::clone(store);
+        port.connect_value_notify(move |row| {
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let value = row.value().clamp(1.0, 65535.0).round() as u16;
+            store.update(|preferences| preferences.proxy.port = value);
+        });
+    }
+    let username = text_row(
+        store,
+        "Username",
+        |preferences| preferences.proxy.username.clone(),
+        |preferences, username| preferences.proxy.username = username,
+    );
+    let secret = adw::PasswordEntryRow::builder()
+        .title("Password")
+        .show_apply_button(true)
+        .text(password.current().unwrap_or_default())
+        .build();
+    {
+        let password = Rc::clone(password);
+        secret.connect_apply(move |row| password.store(&row.text()));
+    }
+    let manual_rows: [gtk::Widget; 5] = [
+        kind.clone().upcast(),
+        host.clone().upcast(),
+        port.clone().upcast(),
+        username.clone().upcast(),
+        secret.clone().upcast(),
+    ];
+    let refresh = move |mode: &adw::ComboRow| {
+        let manual = PROXY_MODES
+            .get(usize::try_from(mode.selected()).unwrap_or_default())
+            .is_some_and(|(choice, _)| *choice == ProxyMode::Manual);
+        for row in &manual_rows {
+            row.set_sensitive(manual);
+        }
+    };
+    refresh(&mode);
+    mode.connect_selected_notify(refresh);
+    page(
+        "Network",
+        "network-wired-symbolic",
+        &[
+            {
+                let connection = group("Connection", &[mode.upcast_ref()]);
+                connection.set_description(Some(RESTART_NOTE));
+                connection
+            },
+            group(
+                "Manual proxy",
+                &[
+                    kind.upcast_ref(),
+                    host.upcast_ref(),
+                    port.upcast_ref(),
+                    username.upcast_ref(),
+                    secret.upcast_ref(),
+                ],
+            ),
+        ],
+    )
 }

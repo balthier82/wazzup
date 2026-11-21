@@ -17,6 +17,9 @@ pub enum PageMessage {
     NotificationClosed {
         id: u64,
     },
+    Connection {
+        online: bool,
+    },
 }
 
 impl PageMessage {
@@ -62,6 +65,14 @@ mod tests {
         assert_eq!(
             PageMessage::parse(r#"{"kind":"notification-closed","id":9}"#),
             Some(PageMessage::NotificationClosed { id: 9 })
+        );
+    }
+
+    #[test]
+    fn parses_connection_changes() {
+        assert_eq!(
+            PageMessage::parse(r#"{"kind":"connection","online":false}"#),
+            Some(PageMessage::Connection { online: false })
         );
     }
 

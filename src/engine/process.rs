@@ -2,6 +2,7 @@
 
 use cef::*;
 
+use super::options::Switch;
 use super::pump::MessagePump;
 use super::renderer::PageBridge;
 
@@ -20,7 +21,9 @@ fn display_server_switch() -> Option<(&'static str, Option<&'static str>)> {
 }
 
 wrap_app! {
-    pub struct WazzupApp;
+    pub struct WazzupApp {
+        extra_switches: Vec<Switch>,
+    }
 
     impl App {
         fn on_before_command_line_processing(
@@ -32,12 +35,18 @@ wrap_app! {
             let Some(command_line) = command_line.filter(|_| is_browser) else {
                 return;
             };
-            let display_server = display_server_switch();
-            for (name, value) in BROWSER_SWITCHES.iter().chain(display_server.iter()) {
-                let name = CefString::from(*name);
+            let fixed = BROWSER_SWITCHES
+                .iter()
+                .chain(display_server_switch().iter())
+                .map(|(name, value)| ((*name).to_owned(), value.map(str::to_owned)))
+                .collect::<Vec<Switch>>();
+            for (name, value) in fixed.iter().chain(self.extra_switches.iter()) {
+                let name = CefString::from(name.as_str());
                 match value {
-                    Some(value) => command_line
-                        .append_switch_with_value(Some(&name), Some(&CefString::from(*value))),
+                    Some(value) => command_line.append_switch_with_value(
+                        Some(&name),
+                        Some(&CefString::from(value.as_str())),
+                    ),
                     None => command_line.append_switch(Some(&name)),
                 }
             }
@@ -57,6 +66,7 @@ wrap_browser_process_handler! {
     struct ProcessEvents;
 
     impl BrowserProcessHandler {
+
         fn on_schedule_message_pump_work(&self, delay_ms: i64) {
             MessagePump::request(delay_ms);
         }

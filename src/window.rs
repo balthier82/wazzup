@@ -14,12 +14,18 @@ use crate::desktop::LauncherBadge;
 use crate::downloads::{DownloadsPanel, unused_path};
 use crate::engine::{DownloadControl, DownloadProgress, MediaAccess};
 use crate::lock::{AppLock, LockScreen};
-use crate::preferences::{CloseAction, NotificationDetail, PreferenceStore, Preferences};
+use crate::preferences::{
+    CloseAction, NotificationDetail, PreferenceStore, Preferences, WindowSize,
+};
+use crate::proxy::ProxyPassword;
+use crate::recovery::{ConnectionWatchdog, CrashBudget, Verdict};
 use crate::tray::TrayIcon;
 use crate::unread::UnreadCount;
 
 const APP_PAGE: &str = "app";
 const LOCK_PAGE: &str = "lock";
+const FAILURE_PAGE: &str = "failure";
+const TICK: Duration = Duration::from_secs(1);
 const IDLE_CHECK: Duration = Duration::from_secs(20);
 
 pub struct MainWindow {
@@ -38,16 +44,24 @@ pub struct MainWindow {
     unread: Cell<UnreadCount>,
     last_activity: Cell<Instant>,
     quitting: Cell<bool>,
+    banner: adw::Banner,
+    failure: adw::StatusPage,
+    failed: Cell<bool>,
+    watchdog: RefCell<ConnectionWatchdog>,
+    crashes: RefCell<CrashBudget>,
+    proxy_password: Rc<ProxyPassword>,
 }
 
 pub struct Shared<'a> {
     pub store: &'a Rc<PreferenceStore>,
     pub lock: &'a Rc<AppLock>,
     pub tray: &'a Rc<RefCell<TrayIcon>>,
+    pub proxy_password: &'a Rc<ProxyPassword>,
 }
 
 impl MainWindow {
     pub fn new(application: &adw::Application, shared: &Shared<'_>) -> Rc<Self> {
+        let remembered = shared.store.snapshot().window.sanitized();
         let main_window = Rc::new_cyclic(|this: &Weak<Self>| {
             let observer: Weak<dyn SurfaceObserver> = this.clone();
             let surface = BrowserSurface::new(observer);
@@ -55,18 +69,51 @@ impl MainWindow {
             let title = adw::WindowTitle::new(APP_NAME, "");
             let toolbar = adw::ToolbarView::new();
             toolbar.add_top_bar(&header_bar(&title, downloads.button()));
+            let banner = adw::Banner::builder()
+                .button_label("Retry Now")
+                .revealed(false)
+                .build();
+            toolbar.add_top_bar(&banner);
             toolbar.set_content(Some(surface.widget()));
+            let retry = gtk::Button::builder()
+                .label("Try Again")
+                .halign(gtk::Align::Center)
+                .css_classes(["suggested-action", "pill"])
+                .build();
+            let failure = adw::StatusPage::builder()
+                .icon_name("network-offline-symbolic")
+                .child(&retry)
+                .build();
+            let failure_view = adw::ToolbarView::new();
+            failure_view.add_top_bar(&adw::HeaderBar::new());
+            failure_view.set_content(Some(&failure));
             let lock_screen = LockScreen::new(shared.lock);
             let pages = gtk::Stack::builder()
                 .transition_type(gtk::StackTransitionType::Crossfade)
                 .build();
             pages.add_named(&toolbar, Some(APP_PAGE));
             pages.add_named(lock_screen.widget(), Some(LOCK_PAGE));
+            pages.add_named(&failure_view, Some(FAILURE_PAGE));
+            let weak = this.clone();
+            retry.connect_clicked(move |_| {
+                if let Some(this) = weak.upgrade() {
+                    this.reload_page();
+                }
+            });
+            let weak = this.clone();
+            banner.connect_button_clicked(move |_| {
+                if let Some(this) = weak.upgrade() {
+                    this.watchdog.borrow_mut().retry_now(Instant::now());
+                }
+            });
             let window = adw::ApplicationWindow::builder()
                 .application(application)
                 .title(APP_NAME)
-                .default_width(1200)
-                .default_height(820)
+                .default_width(remembered.width)
+                .default_height(remembered.height)
+                .maximized(remembered.maximized)
+                .width_request(WindowSize::MINIMUM_WIDTH)
+                .height_request(WindowSize::MINIMUM_HEIGHT)
                 .content(&pages)
                 .build();
             Self {
@@ -85,6 +132,12 @@ impl MainWindow {
                 unread: Cell::default(),
                 last_activity: Cell::new(Instant::now()),
                 quitting: Cell::new(false),
+                banner,
+                failure,
+                failed: Cell::new(false),
+                watchdog: RefCell::default(),
+                crashes: RefCell::default(),
+                proxy_password: Rc::clone(shared.proxy_password),
             }
         });
         main_window.install_actions();
@@ -92,6 +145,7 @@ impl MainWindow {
         main_window.follow_preferences();
         main_window.follow_lock();
         main_window.watch_activity();
+        main_window.watch_connection();
         if main_window.store.snapshot().lock_on_start {
             main_window.lock.lock();
         }
@@ -110,6 +164,7 @@ impl MainWindow {
 
     pub fn toggle(&self) {
         if self.window.is_visible() && self.window.is_active() {
+            self.remember_size();
             self.window.set_visible(false);
         } else {
             self.present();
@@ -133,7 +188,8 @@ impl MainWindow {
     pub fn show_preferences(&self) {
         self.present();
         if !self.lock.is_locked() {
-            crate::preferences_dialog::build(&self.store, &self.lock).present(Some(&self.window));
+            crate::preferences_dialog::build(&self.store, &self.lock, &self.proxy_password)
+                .present(Some(&self.window));
         }
     }
 
@@ -159,6 +215,7 @@ impl MainWindow {
     }
 
     pub fn quit(&self) {
+        self.remember_size();
         self.quitting.set(true);
         self.badge.show(0);
         for window in self.application.windows() {
@@ -204,6 +261,16 @@ impl MainWindow {
         self.window.add_action_entries([reload]);
     }
 
+    fn remember_size(&self) {
+        let (width, height) = self.window.default_size();
+        let size = WindowSize {
+            width,
+            height,
+            maximized: self.window.is_maximized(),
+        };
+        self.store.update(|preferences| preferences.window = size);
+    }
+
     fn guard_close(self: &Rc<Self>) {
         let this = Rc::downgrade(self);
         self.window.connect_close_request(move |window| {
@@ -212,6 +279,7 @@ impl MainWindow {
             };
             let keep_running = this.store.snapshot().close_action == CloseAction::KeepInBackground;
             if keep_running && !this.quitting.get() {
+                this.remember_size();
                 window.set_visible(false);
             } else {
                 this.quit();
@@ -257,11 +325,11 @@ impl MainWindow {
                 if let Some(dialog) = this.window.visible_dialog() {
                     dialog.force_close();
                 }
-                this.pages.set_visible_child_name(LOCK_PAGE);
+                this.show_current_page();
                 this.lock_screen.reset();
             } else {
                 this.last_activity.set(Instant::now());
-                this.pages.set_visible_child_name(APP_PAGE);
+                this.show_current_page();
                 this.surface.widget().grab_focus();
             }
         });
@@ -303,6 +371,71 @@ impl MainWindow {
             }
             glib::ControlFlow::Continue
         });
+    }
+
+    fn show_current_page(&self) {
+        let page = if self.lock.is_locked() {
+            LOCK_PAGE
+        } else if self.failed.get() {
+            FAILURE_PAGE
+        } else {
+            APP_PAGE
+        };
+        self.pages.set_visible_child_name(page);
+    }
+
+    fn reload_page(&self) {
+        if self.failed.replace(false) {
+            self.show_current_page();
+            self.surface.navigate(HOME_URL);
+        } else {
+            self.surface.reload();
+        }
+    }
+
+    fn show_failure(&self, icon: &str, title: &str, description: &str) {
+        self.failure.set_icon_name(Some(icon));
+        self.failure.set_title(title);
+        self.failure.set_description(Some(description));
+        self.failed.set(true);
+        self.show_current_page();
+    }
+
+    fn watch_connection(self: &Rc<Self>) {
+        let this = Rc::downgrade(self);
+        gio::NetworkMonitor::default().connect_network_changed(move |_, available| {
+            if let Some(this) = this.upgrade()
+                && available
+            {
+                this.watchdog.borrow_mut().network_returned(Instant::now());
+            }
+        });
+        let this = Rc::downgrade(self);
+        glib::timeout_add_local(TICK, move || {
+            let Some(this) = this.upgrade() else {
+                return glib::ControlFlow::Break;
+            };
+            this.tick();
+            glib::ControlFlow::Continue
+        });
+    }
+
+    fn tick(&self) {
+        let now = Instant::now();
+        let verdict = self.watchdog.borrow_mut().poll(now);
+        if verdict == Verdict::Reload {
+            tracing::info!("reloading after lost connection");
+            self.reload_page();
+        }
+        let watchdog = self.watchdog.borrow();
+        let show_banner = watchdog.is_offline() && !self.failed.get();
+        self.banner.set_revealed(show_banner);
+        if let Some(remaining) = watchdog.countdown(now).filter(|_| show_banner) {
+            self.banner.set_title(&format!(
+                "Connection lost. Retrying in {} s",
+                remaining.as_secs().max(1)
+            ));
+        }
     }
 
     fn describe(&self, title: &str, body: &str) -> Option<gio::Notification> {
@@ -428,6 +561,51 @@ impl SurfaceObserver for MainWindow {
 
     fn files_allowed(&self) -> bool {
         !self.lock.is_locked()
+    }
+
+    fn proxy_credentials(&self) -> Option<(String, String)> {
+        let username = self.store.snapshot().proxy.username;
+        let password = self.proxy_password.current()?;
+        (!username.is_empty()).then_some((username, password))
+    }
+
+    fn connection_changed(&self, online: bool) {
+        tracing::info!(online, "WhatsApp connection changed");
+        if online {
+            self.watchdog.borrow_mut().went_online();
+            self.crashes.borrow_mut().forgive();
+            if self.failed.replace(false) {
+                self.show_current_page();
+            }
+        } else {
+            self.watchdog.borrow_mut().went_offline(Instant::now());
+        }
+        self.tick();
+    }
+
+    fn page_crashed(&self) {
+        let delay = self.crashes.borrow_mut().record(Instant::now());
+        match delay {
+            Some(delay) => {
+                let surface = self.surface.clone();
+                glib::timeout_add_local_once(delay, move || surface.reload());
+            }
+            None => self.show_failure(
+                "dialog-error-symbolic",
+                "WhatsApp Stopped Working",
+                "The page closed unexpectedly several times.",
+            ),
+        }
+    }
+
+    fn load_failed(&self, description: &str) {
+        self.watchdog.borrow_mut().went_offline(Instant::now());
+        let detail = if description.is_empty() {
+            "Check your internet connection. Wazzup will try again automatically.".to_owned()
+        } else {
+            format!("{description}. Wazzup will try again automatically.")
+        };
+        self.show_failure("network-offline-symbolic", "Can’t Reach WhatsApp", &detail);
     }
 
     fn download_progress(&self, progress: DownloadProgress, control: Option<DownloadControl>) {

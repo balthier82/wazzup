@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::rc::Rc;
 
+use super::context_menu::{MenuAnswer, MenuRequest};
 use super::download::{DownloadControl, DownloadProgress};
 use super::file_dialog::{FileAnswer, FileRequest};
 use super::media::MediaAccess;
@@ -60,4 +61,8 @@ pub trait PageHost {
     fn download_target(&self, suggested_name: &str) -> Option<PathBuf>;
     fn download_progress(&self, progress: DownloadProgress, control: Option<DownloadControl>);
     fn choose_files(&self, request: FileRequest, answer: FileAnswer);
+    fn page_crashed(&self);
+    fn proxy_credentials(&self) -> Option<(String, String)>;
+    fn show_context_menu(&self, request: MenuRequest, answer: MenuAnswer);
+    fn load_failed(&self, description: &str);
 }

@@ -67,6 +67,10 @@ impl SurfaceObserver for CallWindow {
         self.window.destroy();
     }
 
+    fn page_crashed(&self) {
+        self.window.close();
+    }
+
     fn media_allowed(&self) -> MediaAccess {
         (self.media_policy)()
     }

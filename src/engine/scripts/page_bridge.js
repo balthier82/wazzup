@@ -111,6 +111,45 @@
       style.textContent = veilCss(Number(pixels) || 0);
     };
     Object.defineProperty(globalThis, "__wazzupVeil", hidden(applyVeil));
+
+    const NativeSocket = globalThis.WebSocket;
+    const watchedHost = /(^|\.)whatsapp\.(net|com)$/i;
+    let openSockets = 0;
+    const report = (online) => send({ kind: "connection", online });
+    class WatchedSocket extends NativeSocket {
+      constructor(address, protocols) {
+        super(address, protocols);
+        let host = "";
+        try {
+          host = new URL(String(address), globalThis.location.href).hostname;
+        } catch (_) {
+          host = "";
+        }
+        if (!watchedHost.test(host)) {
+          return;
+        }
+        let counted = false;
+        this.addEventListener("open", () => {
+          counted = true;
+          openSockets += 1;
+          if (openSockets === 1) {
+            report(true);
+          }
+        });
+        this.addEventListener("close", () => {
+          if (!counted) {
+            return;
+          }
+          counted = false;
+          openSockets = Math.max(0, openSockets - 1);
+          if (openSockets === 0) {
+            report(false);
+          }
+        });
+      }
+    }
+    Object.defineProperty(WatchedSocket, "name", { value: "WebSocket" });
+    Object.defineProperty(globalThis, "WebSocket", hidden(WatchedSocket));
   }
 
   const alwaysPersistent = (target) => {
