@@ -177,11 +177,10 @@ def command_check(arguments):
 
 
 def fetch(destination, address):
-    if destination.is_file() and destination.stat().st_size > 0:
-        return
-    say(f"Downloading {destination.name}")
-    with urllib.request.urlopen(address) as response, open(destination, "wb") as target:
-        shutil.copyfileobj(response, target)
+    if not destination.is_file() or destination.stat().st_size == 0:
+        say(f"Downloading {destination.name}")
+        with urllib.request.urlopen(address) as response, open(destination, "wb") as target:
+            shutil.copyfileobj(response, target)
     destination.chmod(0o755)
 
 
