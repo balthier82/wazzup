@@ -13,6 +13,7 @@ use super::canvas::BrowserCanvas;
 use super::input;
 use crate::engine::{
     PageClient, PageHost, PageMessage, PaintLayer, PixelFrame, PopupArea, Viewport,
+    emulate_color_scheme,
 };
 
 const FRAME_RATE: i32 = 60;
@@ -32,6 +33,7 @@ pub struct SurfaceCore {
     im: gtk::IMMulticontext,
     browser: RefCell<Option<Browser>>,
     viewport: Cell<Viewport>,
+    pending_address: RefCell<Option<String>>,
     observer: Weak<dyn SurfaceObserver>,
 }
 
@@ -55,6 +57,26 @@ impl SurfaceCore {
         }
         if previous != next {
             host.was_resized();
+        }
+    }
+
+    fn follow_style(&self) {
+        if let Some(host) = self.host() {
+            emulate_color_scheme(&host, adw::StyleManager::default().is_dark());
+        }
+    }
+
+    fn navigate(&self, address: &str) {
+        let frame = self
+            .browser
+            .borrow()
+            .as_ref()
+            .and_then(ImplBrowser::main_frame);
+        match frame {
+            Some(frame) => frame.load_url(Some(&CefString::from(address))),
+            None => {
+                self.pending_address.replace(Some(address.to_owned()));
+            }
         }
     }
 
@@ -110,6 +132,10 @@ impl PageHost for SurfaceCore {
         if let Some(host) = self.host() {
             host.was_resized();
             host.set_focus(i32::from(self.canvas.has_focus()));
+        }
+        self.follow_style();
+        if let Some(address) = self.pending_address.take() {
+            self.navigate(&address);
         }
     }
 
@@ -172,9 +198,16 @@ impl BrowserSurface {
             im: im.clone(),
             browser: RefCell::default(),
             viewport: Cell::default(),
+            pending_address: RefCell::default(),
             observer,
         });
         input::attach(&canvas, Rc::downgrade(&core), &im);
+        let styled = Rc::downgrade(&core);
+        adw::StyleManager::default().connect_dark_notify(move |_| {
+            if let Some(core) = styled.upgrade() {
+                core.follow_style();
+            }
+        });
         let resized = Rc::downgrade(&core);
         canvas.connect_resized(move || {
             if let Some(core) = resized.upgrade() {
@@ -211,6 +244,10 @@ impl BrowserSurface {
         if created != 1 {
             tracing::error!(%address, "browser could not be created");
         }
+    }
+
+    pub fn navigate(&self, address: &str) {
+        self.core.navigate(address);
     }
 
     pub fn reload(&self) {

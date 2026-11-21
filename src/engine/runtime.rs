@@ -8,10 +8,16 @@ use super::process::WazzupApp;
 use super::pump::MessagePump;
 use crate::config::{APP_ID, Profile};
 
-pub enum Boot {
-    Ready(Engine),
-    ChildProcessFinished(u8),
-    Failed(String),
+pub fn run_child_process() -> Option<u8> {
+    let _ = api_hash(sys::CEF_API_VERSION_LAST, 0);
+    let args = Args::new();
+    let mut app = WazzupApp::new();
+    let code = execute_process(
+        Some(args.as_main_args()),
+        Some(&mut app),
+        std::ptr::null_mut(),
+    );
+    (code >= 0).then(|| u8::try_from(code).unwrap_or(u8::MAX))
 }
 
 pub struct Engine {
@@ -19,23 +25,13 @@ pub struct Engine {
 }
 
 impl Engine {
-    pub fn boot() -> Boot {
-        let _ = api_hash(sys::CEF_API_VERSION_LAST, 0);
+    pub fn start() -> Result<Self, String> {
         let args = Args::new();
         let mut app = WazzupApp::new();
-        let code = execute_process(
-            Some(args.as_main_args()),
-            Some(&mut app),
-            std::ptr::null_mut(),
-        );
-        if code >= 0 {
-            return Boot::ChildProcessFinished(u8::try_from(code).unwrap_or(u8::MAX));
-        }
-
         let layout = RuntimeLayout::discover();
-        if let Err(error) = layout.prepare() {
-            return Boot::Failed(format!("cannot create profile folders: {error}"));
-        }
+        layout
+            .prepare()
+            .map_err(|error| format!("cannot create profile folders: {error}"))?;
         let settings = layout.settings();
         let started = initialize(
             Some(args.as_main_args()),
@@ -44,13 +40,13 @@ impl Engine {
             std::ptr::null_mut(),
         );
         if started != 1 {
-            return Boot::Failed(format!(
+            return Err(format!(
                 "the Chromium engine did not start (resources expected in {})",
                 layout.engine_dir.display()
             ));
         }
         MessagePump::start_fallback();
-        Boot::Ready(Self { layout })
+        Ok(Self { layout })
     }
 
     pub fn shutdown(self) {
