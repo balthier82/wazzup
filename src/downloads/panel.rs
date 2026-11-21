@@ -10,6 +10,7 @@ use gtk::glib;
 use super::history::{DownloadRecord, History, is_risky, readable_size};
 use crate::config::{APP_ID, Profile};
 use crate::engine::{DownloadControl, DownloadProgress, DownloadState};
+use crate::i18n::{t, t_with};
 
 struct Entry {
     row: gtk::ListBoxRow,
@@ -41,7 +42,7 @@ impl DownloadsPanel {
             .css_classes(["boxed-list"])
             .build();
         let clear = gtk::Button::builder()
-            .label("Clear list")
+            .label(t("Clear list"))
             .halign(gtk::Align::End)
             .css_classes(["flat"])
             .build();
@@ -65,7 +66,7 @@ impl DownloadsPanel {
         content.append(&clear);
         let button = gtk::MenuButton::builder()
             .icon_name("folder-download-symbolic")
-            .tooltip_text("Downloads")
+            .tooltip_text(t("Downloads"))
             .popover(&gtk::Popover::builder().child(&content).build())
             .build();
         let panel = Rc::new(Self {
@@ -138,7 +139,7 @@ impl DownloadsPanel {
         else {
             return;
         };
-        let notification = gio::Notification::new("Download complete");
+        let notification = gio::Notification::new(&t("Download complete"));
         notification.set_body(Some(&record.file_name()));
         notification.set_default_action("app.present");
         application.send_notification(None, &notification);
@@ -182,9 +183,9 @@ impl DownloadsPanel {
         text.append(&name);
         text.append(&progress);
         text.append(&status);
-        let cancel = icon_button("process-stop-symbolic", "Cancel");
-        let open = icon_button("document-open-symbolic", "Open");
-        let folder = icon_button("folder-open-symbolic", "Show in folder");
+        let cancel = icon_button("process-stop-symbolic", &t("Cancel"));
+        let open = icon_button("document-open-symbolic", &t("Open"));
+        let folder = icon_button("folder-open-symbolic", &t("Show in folder"));
         let controls = Rc::clone(&self.controls);
         let path = record.path.clone();
         cancel.connect_clicked(move |_| {
@@ -255,10 +256,12 @@ fn refresh(entry: &Entry, record: &DownloadRecord) {
                 entry
                     .progress
                     .set_fraction(record.received as f64 / total.max(1) as f64);
-                format!(
-                    "{} of {}",
-                    readable_size(record.received),
-                    readable_size(total)
+                t_with(
+                    "{done} of {total}",
+                    &[
+                        ("done", &readable_size(record.received)),
+                        ("total", &readable_size(total)),
+                    ],
                 )
             } else {
                 entry.progress.pulse();
@@ -266,8 +269,8 @@ fn refresh(entry: &Entry, record: &DownloadRecord) {
             }
         }
         DownloadState::Finished => readable_size(record.received),
-        DownloadState::Cancelled => "Cancelled".to_owned(),
-        DownloadState::Failed => "Failed".to_owned(),
+        DownloadState::Cancelled => t("Cancelled"),
+        DownloadState::Failed => t("Failed"),
     };
     entry.status.set_label(&status);
 }
@@ -298,12 +301,14 @@ fn open_file(button: &gtk::Button, path: &Path) {
         return;
     }
     let dialog = adw::AlertDialog::builder()
-        .heading("Open this file?")
-        .body("It can run programs on your computer. Open it only if you trust who sent it.")
+        .heading(t("Open this file?"))
+        .body(t(
+            "It can run programs on your computer. Open it only if you trust who sent it.",
+        ))
         .close_response("cancel")
         .default_response("cancel")
         .build();
-    dialog.add_responses(&[("cancel", "Cancel"), ("open", "Open Anyway")]);
+    dialog.add_responses(&[("cancel", &t("Cancel")), ("open", &t("Open Anyway"))]);
     dialog.set_response_appearance("open", adw::ResponseAppearance::Destructive);
     dialog.connect_response(Some("open"), move |_, _| launch());
     dialog.present(parent.as_ref());

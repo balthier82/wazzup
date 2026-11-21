@@ -6,6 +6,7 @@ mod config;
 mod desktop;
 mod downloads;
 mod engine;
+mod i18n;
 mod launch;
 mod lock;
 mod navigation;
@@ -44,6 +45,7 @@ fn main() -> ExitCode {
         }
     }
 
+    application.activate_language();
     let guard = std::rc::Rc::new(startup_guard::StartupGuard::arm());
     let options = application.engine_options(guard.needs_software_rendering());
     let engine = match engine::Engine::start(&options) {

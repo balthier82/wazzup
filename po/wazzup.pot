@@ -1,0 +1,569 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: src/window.rs
+msgid "About Wazzup"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Advanced"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "After 1 hour"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "After 1 minute"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "After 15 minutes"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "After 30 minutes"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "After 5 minutes"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Announce new messages and calls"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "App icon"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "App lock"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Appearance"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Ask for the passcode every time Wazzup opens"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Behaviour"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Blur chats"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Camera"
+msgstr ""
+
+#: src/downloads/panel.rs
+msgid "Cancel"
+msgstr ""
+
+#: src/downloads/panel.rs
+msgid "Cancelled"
+msgstr ""
+
+#: src/window.rs
+msgid "Can’t Reach WhatsApp"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Change"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Change Passcode"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Changes apply the next time Wazzup starts."
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Change…"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Check spelling"
+msgstr ""
+
+#: src/window.rs
+msgid "Check your internet connection. Wazzup will try again automatically."
+msgstr ""
+
+#: src/downloads/panel.rs
+msgid "Clear list"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Closing the window keeps Wazzup available for notifications"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Connection"
+msgstr ""
+
+#: src/window.rs
+msgid "Connection lost. Retrying in {seconds} s"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Content"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Current passcode"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Dark"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Dark, for light top bars"
+msgstr ""
+
+#: src/downloads/panel.rs
+msgid "Download complete"
+msgstr ""
+
+#: src/downloads/panel.rs
+msgid "Downloads"
+msgstr ""
+
+#: src/lock/screen.rs
+msgid "Enter your passcode to continue"
+msgstr ""
+
+#: src/downloads/panel.rs
+msgid "Failed"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Follow system"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "General"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Hardware acceleration"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Hide names and messages until you point at them"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Icon colour"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Interface language"
+msgstr ""
+
+#: src/downloads/panel.rs
+msgid "It can run programs on your computer. Open it only if you trust who sent it."
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Keep running when closed"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Language"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Languages"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Launch at login"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Light"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Light, for dark top bars"
+msgstr ""
+
+#: src/window.rs
+msgid "Lock"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Lock as soon as the window is closed or hidden"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Lock on start"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Lock when hidden"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Lock when idle"
+msgstr ""
+
+#: src/window.rs
+msgid "Main menu"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Manual"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Manual proxy"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Medium"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Messages"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Microphone"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Needs the AppIndicator extension on GNOME"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Network"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Never"
+msgstr ""
+
+#: src/window.rs
+msgid "New message"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "New passcode"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "No proxy"
+msgstr ""
+
+#: src/tray/mod.rs
+msgid "No unread chats"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Notifications"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "OK"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Off"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Only “New message”"
+msgstr ""
+
+#: src/downloads/panel.rs
+msgid "Open"
+msgstr ""
+
+#: src/downloads/panel.rs
+msgid "Open Anyway"
+msgstr ""
+
+#: src/tray/mod.rs
+msgid "Open Wazzup"
+msgstr ""
+
+#: src/downloads/panel.rs
+msgid "Open this file?"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Open without showing the window"
+msgstr ""
+
+#: src/lock/screen.rs
+msgid "Passcode"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Passcode Not Changed"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Password"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Port"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Preferences"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Privacy"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Proxy"
+msgstr ""
+
+#: src/tray/mod.rs
+msgid "Quit"
+msgstr ""
+
+#: src/window.rs
+msgid "Reload"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Remove"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Remove Passcode"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Repeat new passcode"
+msgstr ""
+
+#: src/window.rs
+msgid "Retry Now"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Right-click a highlighted word for suggestions"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Screen privacy"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Screen sharing"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Sender and message"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Sender only"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Server"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Set"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Set Passcode"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Set a passcode to lock Wazzup"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Set…"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Share your screen during calls"
+msgstr ""
+
+#: src/downloads/panel.rs
+msgid "Show in folder"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Show in the top bar"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Show notifications"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Show the number of unread chats on the app icon"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Spelling"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Start Wazzup in background when you sign in"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Start in background"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Strong"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Style"
+msgstr ""
+
+#: src/browser/file_picker.rs
+msgid "Supported files"
+msgstr ""
+
+#: src/i18n/mod.rs
+msgid "System default"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "The current passcode is wrong, or you need to wait before trying again."
+msgstr ""
+
+#: src/window.rs
+msgid "The page closed unexpectedly several times."
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "The passcode could not be saved."
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "The passcode needs at least {length} characters."
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "The two new passcodes are different."
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Theme"
+msgstr ""
+
+#: src/lock/screen.rs
+msgid "Too many attempts"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Top bar icon"
+msgstr ""
+
+#: src/window.rs
+msgid "Try Again"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Turn off if the window stays black or flickers"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Type"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Underline mistakes while you type"
+msgstr ""
+
+#: src/lock/screen.rs
+msgid "Unlock"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Unread badge"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Use at least {length} characters."
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Use system settings"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Username"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Video calls"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Voice messages and calls"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Wazzup can be locked"
+msgstr ""
+
+#: src/lock/screen.rs
+msgid "Wazzup is locked"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "Wazzup will no longer be locked."
+msgstr ""
+
+#: src/window.rs
+msgid "WhatsApp Stopped Working"
+msgstr ""
+
+#: src/preferences_dialog.rs
+msgid "WhatsApp may use"
+msgstr ""
+
+#: src/window.rs
+msgid "WhatsApp on your GNOME desktop"
+msgstr ""
+
+#: src/lock/screen.rs
+msgid "Wrong passcode"
+msgstr ""
+
+#: src/window.rs
+msgid "{description}. Wazzup will try again automatically."
+msgstr ""
+
+#: src/downloads/panel.rs
+msgid "{done} of {total}"
+msgstr ""
+
+#: src/lock/screen.rs
+msgid "{reason}. Try again in {seconds} s."
+msgstr ""
+
+#: src/tray/mod.rs
+msgid "{count} unread chat"
+msgid_plural "{count} unread chats"
+msgstr[0] ""
+msgstr[1] ""

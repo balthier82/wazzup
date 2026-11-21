@@ -5,6 +5,7 @@ use ksni::menu::StandardItem;
 use ksni::{Icon, MenuItem, ToolTip, Tray};
 
 use crate::config::{APP_ID, APP_NAME};
+use crate::i18n::{t, t_count};
 use crate::preferences::TrayStyle;
 use glyph::{Glyph, Ink};
 
@@ -61,10 +62,14 @@ impl Tray for TrayModel {
     }
 
     fn tool_tip(&self) -> ToolTip {
-        let description = match self.unread {
-            0 => "No unread chats".to_owned(),
-            1 => "1 unread chat".to_owned(),
-            many => format!("{many} unread chats"),
+        let description = if self.unread == 0 {
+            t("No unread chats")
+        } else {
+            t_count(
+                "{count} unread chat",
+                "{count} unread chats",
+                u64::from(self.unread),
+            )
         };
         ToolTip {
             title: APP_NAME.to_owned(),
@@ -80,7 +85,7 @@ impl Tray for TrayModel {
     fn menu(&self) -> Vec<MenuItem<Self>> {
         let entry = |label: &str, command: TrayCommand| -> MenuItem<Self> {
             StandardItem {
-                label: label.to_owned(),
+                label: t(label),
                 activate: Box::new(move |model: &mut Self| model.send(command)),
                 ..StandardItem::default()
             }

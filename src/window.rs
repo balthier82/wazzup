@@ -13,6 +13,7 @@ use crate::config::{APP_NAME, HOME_URL};
 use crate::desktop::LauncherBadge;
 use crate::downloads::{DownloadsPanel, unused_path};
 use crate::engine::{DownloadControl, DownloadProgress, MediaAccess};
+use crate::i18n::{t, t_count, t_with};
 use crate::lock::{AppLock, LockScreen};
 use crate::preferences::{
     CloseAction, NotificationDetail, PreferenceStore, Preferences, WindowSize,
@@ -70,13 +71,13 @@ impl MainWindow {
             let toolbar = adw::ToolbarView::new();
             toolbar.add_top_bar(&header_bar(&title, downloads.button()));
             let banner = adw::Banner::builder()
-                .button_label("Retry Now")
+                .button_label(t("Retry Now"))
                 .revealed(false)
                 .build();
             toolbar.add_top_bar(&banner);
             toolbar.set_content(Some(surface.widget()));
             let retry = gtk::Button::builder()
-                .label("Try Again")
+                .label(t("Try Again"))
                 .halign(gtk::Align::Center)
                 .css_classes(["suggested-action", "pill"])
                 .build();
@@ -205,7 +206,7 @@ impl MainWindow {
             .developer_name("balthier82")
             .website("https://github.com/balthier82/wazzup")
             .issue_url("https://github.com/balthier82/wazzup/issues")
-            .comments("WhatsApp on your GNOME desktop")
+            .comments(t("WhatsApp on your GNOME desktop"))
             .build()
             .present(Some(&self.window));
     }
@@ -431,9 +432,9 @@ impl MainWindow {
         let show_banner = watchdog.is_offline() && !self.failed.get();
         self.banner.set_revealed(show_banner);
         if let Some(remaining) = watchdog.countdown(now).filter(|_| show_banner) {
-            self.banner.set_title(&format!(
-                "Connection lost. Retrying in {} s",
-                remaining.as_secs().max(1)
+            self.banner.set_title(&t_with(
+                "Connection lost. Retrying in {seconds} s",
+                &[("seconds", &remaining.as_secs().max(1))],
             ));
         }
     }
@@ -444,7 +445,7 @@ impl MainWindow {
             return None;
         }
         if self.lock.is_locked() {
-            return Some(gio::Notification::new("New message"));
+            return Some(gio::Notification::new(&t("New message")));
         }
         let notification = match preferences.notification_detail {
             NotificationDetail::SenderAndMessage => {
@@ -454,10 +455,10 @@ impl MainWindow {
             }
             NotificationDetail::SenderOnly => {
                 let notification = gio::Notification::new(title);
-                notification.set_body(Some("New message"));
+                notification.set_body(Some(&t("New message")));
                 notification
             }
-            NotificationDetail::Nothing => gio::Notification::new("New message"),
+            NotificationDetail::Nothing => gio::Notification::new(&t("New message")),
         };
         Some(notification)
     }
@@ -468,23 +469,23 @@ fn header_bar(title: &adw::WindowTitle, downloads: &gtk::MenuButton) -> adw::Hea
     header.pack_start(
         &gtk::Button::builder()
             .icon_name("view-refresh-symbolic")
-            .tooltip_text("Reload")
+            .tooltip_text(t("Reload"))
             .action_name("win.reload")
             .build(),
     );
     let menu = gio::Menu::new();
     let sections = gio::Menu::new();
-    sections.append(Some("Lock"), Some("app.lock"));
-    sections.append(Some("Preferences"), Some("app.preferences"));
-    sections.append(Some("About Wazzup"), Some("app.about"));
+    sections.append(Some(&t("Lock")), Some("app.lock"));
+    sections.append(Some(&t("Preferences")), Some("app.preferences"));
+    sections.append(Some(&t("About Wazzup")), Some("app.about"));
     menu.append_section(None, &sections);
     let ending = gio::Menu::new();
-    ending.append(Some("Quit"), Some("app.quit"));
+    ending.append(Some(&t("Quit")), Some("app.quit"));
     menu.append_section(None, &ending);
     header.pack_end(
         &gtk::MenuButton::builder()
             .icon_name("open-menu-symbolic")
-            .tooltip_text("Main menu")
+            .tooltip_text(t("Main menu"))
             .menu_model(&menu)
             .primary(true)
             .build(),
@@ -497,10 +498,14 @@ impl SurfaceObserver for MainWindow {
     fn title_changed(&self, title: &str) {
         let count = UnreadCount::from_page_title(title);
         self.unread.set(count);
-        let subtitle = match count.value() {
-            0 => String::new(),
-            1 => "1 unread chat".to_owned(),
-            many => format!("{many} unread chats"),
+        let subtitle = if count.is_zero() {
+            String::new()
+        } else {
+            t_count(
+                "{count} unread chat",
+                "{count} unread chats",
+                u64::from(count.value()),
+            )
         };
         self.title.set_subtitle(&subtitle);
         let window_title = if count.is_zero() {
@@ -592,8 +597,8 @@ impl SurfaceObserver for MainWindow {
             }
             None => self.show_failure(
                 "dialog-error-symbolic",
-                "WhatsApp Stopped Working",
-                "The page closed unexpectedly several times.",
+                &t("WhatsApp Stopped Working"),
+                &t("The page closed unexpectedly several times."),
             ),
         }
     }
@@ -601,11 +606,18 @@ impl SurfaceObserver for MainWindow {
     fn load_failed(&self, description: &str) {
         self.watchdog.borrow_mut().went_offline(Instant::now());
         let detail = if description.is_empty() {
-            "Check your internet connection. Wazzup will try again automatically.".to_owned()
+            t("Check your internet connection. Wazzup will try again automatically.")
         } else {
-            format!("{description}. Wazzup will try again automatically.")
+            t_with(
+                "{description}. Wazzup will try again automatically.",
+                &[("description", &description)],
+            )
         };
-        self.show_failure("network-offline-symbolic", "Can’t Reach WhatsApp", &detail);
+        self.show_failure(
+            "network-offline-symbolic",
+            &t("Can’t Reach WhatsApp"),
+            &detail,
+        );
     }
 
     fn download_progress(&self, progress: DownloadProgress, control: Option<DownloadControl>) {

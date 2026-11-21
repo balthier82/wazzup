@@ -5,6 +5,7 @@ use adw::prelude::*;
 use gtk::glib;
 
 use super::{AppLock, UnlockOutcome};
+use crate::i18n::{t, t_with};
 
 #[derive(Clone)]
 pub struct LockScreen {
@@ -15,14 +16,16 @@ pub struct LockScreen {
 
 impl LockScreen {
     pub fn new(lock: &Rc<AppLock>) -> Self {
-        let entry = adw::PasswordEntryRow::builder().title("Passcode").build();
+        let entry = adw::PasswordEntryRow::builder()
+            .title(t("Passcode"))
+            .build();
         let list = gtk::ListBox::builder()
             .selection_mode(gtk::SelectionMode::None)
             .css_classes(["boxed-list"])
             .build();
         list.append(&entry);
         let unlock = gtk::Button::builder()
-            .label("Unlock")
+            .label(t("Unlock"))
             .halign(gtk::Align::Center)
             .css_classes(["suggested-action", "pill"])
             .build();
@@ -42,8 +45,8 @@ impl LockScreen {
         let clamp = adw::Clamp::builder().maximum_size(360).child(&form).build();
         let status = adw::StatusPage::builder()
             .icon_name("system-lock-screen-symbolic")
-            .title("Wazzup is locked")
-            .description("Enter your passcode to continue")
+            .title(t("Wazzup is locked"))
+            .description(t("Enter your passcode to continue"))
             .child(&clamp)
             .vexpand(true)
             .build();
@@ -90,9 +93,9 @@ impl LockScreen {
             UnlockOutcome::Unlocked => self.reset(),
             UnlockOutcome::Rejected { wait } => {
                 self.entry.set_text("");
-                self.explain("Wrong passcode", wait);
+                self.explain(&t("Wrong passcode"), wait);
             }
-            UnlockOutcome::TooSoon { wait } => self.explain("Too many attempts", wait),
+            UnlockOutcome::TooSoon { wait } => self.explain(&t("Too many attempts"), wait),
         }
     }
 
@@ -102,8 +105,10 @@ impl LockScreen {
             self.message.set_label(reason);
             return;
         }
-        self.message
-            .set_label(&format!("{reason}. Try again in {} s.", wait.as_secs()));
+        self.message.set_label(&t_with(
+            "{reason}. Try again in {seconds} s.",
+            &[("reason", &reason), ("seconds", &wait.as_secs())],
+        ));
         self.entry.set_sensitive(false);
         let screen = self.clone();
         glib::timeout_add_local_once(wait, move || {

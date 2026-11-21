@@ -46,6 +46,10 @@ impl WazzupApplication {
         application
     }
 
+    pub fn activate_language(&self) {
+        crate::i18n::activate(self.store.snapshot().language);
+    }
+
     pub fn engine_options(&self, gpu_failed_before: bool) -> EngineOptions {
         let preferences = self.store.snapshot();
         if gpu_failed_before && preferences.hardware_acceleration {

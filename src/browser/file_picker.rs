@@ -5,6 +5,7 @@ use gtk::glib;
 use gtk::prelude::*;
 
 use crate::engine::{FileAnswer, FileChoice, FileRequest};
+use crate::i18n::t;
 
 pub fn present(parent: Option<&gtk::Window>, request: &FileRequest, answer: FileAnswer) {
     let dialog = gtk::FileDialog::builder().modal(true).build();
@@ -57,7 +58,7 @@ fn filter_for(accepted: &[String]) -> Option<gtk::FileFilter> {
         return None;
     }
     let filter = gtk::FileFilter::new();
-    filter.set_name(Some("Supported files"));
+    filter.set_name(Some(&t("Supported files")));
     for pattern in accepted {
         if let Some(suffix) = pattern.strip_prefix('.') {
             filter.add_suffix(suffix);

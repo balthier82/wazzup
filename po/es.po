@@ -1,0 +1,430 @@
+msgid ""
+msgstr ""
+"Language: es\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "About Wazzup"
+msgstr "Acerca de Wazzup"
+
+msgid "Advanced"
+msgstr "Avanzado"
+
+msgid "After 1 hour"
+msgstr "Tras 1 hora"
+
+msgid "After 1 minute"
+msgstr "Tras 1 minuto"
+
+msgid "After 15 minutes"
+msgstr "Tras 15 minutos"
+
+msgid "After 30 minutes"
+msgstr "Tras 30 minutos"
+
+msgid "After 5 minutes"
+msgstr "Tras 5 minutos"
+
+msgid "Announce new messages and calls"
+msgstr "Avisar de mensajes y llamadas nuevos"
+
+msgid "App icon"
+msgstr "Icono de la aplicación"
+
+msgid "App lock"
+msgstr "Bloqueo de la aplicación"
+
+msgid "Appearance"
+msgstr "Apariencia"
+
+msgid "Ask for the passcode every time Wazzup opens"
+msgstr "Pedir el código cada vez que se abra Wazzup"
+
+msgid "Behaviour"
+msgstr "Comportamiento"
+
+msgid "Blur chats"
+msgstr "Difuminar los chats"
+
+msgid "Camera"
+msgstr "Cámara"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Cancelled"
+msgstr "Cancelada"
+
+msgid "Can’t Reach WhatsApp"
+msgstr "No se puede acceder a WhatsApp"
+
+msgid "Change"
+msgstr "Cambiar"
+
+msgid "Change Passcode"
+msgstr "Cambiar código"
+
+msgid "Changes apply the next time Wazzup starts."
+msgstr "Los cambios se aplican la próxima vez que se inicie Wazzup."
+
+msgid "Change…"
+msgstr "Cambiar…"
+
+msgid "Check spelling"
+msgstr "Revisar la ortografía"
+
+msgid "Check your internet connection. Wazzup will try again automatically."
+msgstr "Comprueba tu conexión a Internet. Wazzup lo volverá a intentar automáticamente."
+
+msgid "Clear list"
+msgstr "Vaciar la lista"
+
+msgid "Closing the window keeps Wazzup available for notifications"
+msgstr "Al cerrar la ventana, Wazzup sigue disponible para las notificaciones"
+
+msgid "Connection"
+msgstr "Conexión"
+
+msgid "Connection lost. Retrying in {seconds} s"
+msgstr "Conexión perdida. Reintentando en {seconds} s"
+
+msgid "Content"
+msgstr "Contenido"
+
+msgid "Current passcode"
+msgstr "Código actual"
+
+msgid "Dark"
+msgstr "Oscuro"
+
+msgid "Dark, for light top bars"
+msgstr "Oscuro, para barras superiores claras"
+
+msgid "Download complete"
+msgstr "Descarga completada"
+
+msgid "Downloads"
+msgstr "Descargas"
+
+msgid "Enter your passcode to continue"
+msgstr "Introduce tu código para continuar"
+
+msgid "Failed"
+msgstr "Fallida"
+
+msgid "Follow system"
+msgstr "Seguir al sistema"
+
+msgid "General"
+msgstr "General"
+
+msgid "Hardware acceleration"
+msgstr "Aceleración por hardware"
+
+msgid "Hide names and messages until you point at them"
+msgstr "Oculta nombres y mensajes hasta que pases el puntero por encima"
+
+msgid "Icon colour"
+msgstr "Color del icono"
+
+msgid "Interface language"
+msgstr "Idioma de la interfaz"
+
+msgid "It can run programs on your computer. Open it only if you trust who sent it."
+msgstr "Puede ejecutar programas en tu equipo. Ábrelo solo si confías en quien lo envió."
+
+msgid "Keep running when closed"
+msgstr "Seguir activo al cerrar"
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "Languages"
+msgstr "Idiomas"
+
+msgid "Launch at login"
+msgstr "Iniciar al acceder"
+
+msgid "Light"
+msgstr "Claro"
+
+msgid "Light, for dark top bars"
+msgstr "Claro, para barras superiores oscuras"
+
+msgid "Lock"
+msgstr "Bloquear"
+
+msgid "Lock as soon as the window is closed or hidden"
+msgstr "Bloquear en cuanto se cierre u oculte la ventana"
+
+msgid "Lock on start"
+msgstr "Bloquear al iniciar"
+
+msgid "Lock when hidden"
+msgstr "Bloquear al ocultar"
+
+msgid "Lock when idle"
+msgstr "Bloquear por inactividad"
+
+msgid "Main menu"
+msgstr "Menú principal"
+
+msgid "Manual"
+msgstr "Manual"
+
+msgid "Manual proxy"
+msgstr "Proxy manual"
+
+msgid "Medium"
+msgstr "Media"
+
+msgid "Messages"
+msgstr "Mensajes"
+
+msgid "Microphone"
+msgstr "Micrófono"
+
+msgid "Needs the AppIndicator extension on GNOME"
+msgstr "Requiere la extensión AppIndicator en GNOME"
+
+msgid "Network"
+msgstr "Red"
+
+msgid "Never"
+msgstr "Nunca"
+
+msgid "New message"
+msgstr "Mensaje nuevo"
+
+msgid "New passcode"
+msgstr "Código nuevo"
+
+msgid "No proxy"
+msgstr "Sin proxy"
+
+msgid "No unread chats"
+msgstr "No hay chats sin leer"
+
+msgid "Notifications"
+msgstr "Notificaciones"
+
+msgid "OK"
+msgstr "Aceptar"
+
+msgid "Off"
+msgstr "Desactivado"
+
+msgid "Only “New message”"
+msgstr "Solo «Mensaje nuevo»"
+
+msgid "Open"
+msgstr "Abrir"
+
+msgid "Open Anyway"
+msgstr "Abrir de todos modos"
+
+msgid "Open Wazzup"
+msgstr "Abrir Wazzup"
+
+msgid "Open this file?"
+msgstr "¿Abrir este archivo?"
+
+msgid "Open without showing the window"
+msgstr "Abrir sin mostrar la ventana"
+
+msgid "Passcode"
+msgstr "Código"
+
+msgid "Passcode Not Changed"
+msgstr "Código no modificado"
+
+msgid "Password"
+msgstr "Contraseña"
+
+msgid "Port"
+msgstr "Puerto"
+
+msgid "Preferences"
+msgstr "Preferencias"
+
+msgid "Privacy"
+msgstr "Privacidad"
+
+msgid "Proxy"
+msgstr "Proxy"
+
+msgid "Quit"
+msgstr "Salir"
+
+msgid "Reload"
+msgstr "Recargar"
+
+msgid "Remove"
+msgstr "Quitar"
+
+msgid "Remove Passcode"
+msgstr "Quitar código"
+
+msgid "Repeat new passcode"
+msgstr "Repite el código nuevo"
+
+msgid "Retry Now"
+msgstr "Reintentar ahora"
+
+msgid "Right-click a highlighted word for suggestions"
+msgstr "Haz clic derecho en una palabra marcada para ver sugerencias"
+
+msgid "Screen privacy"
+msgstr "Privacidad en pantalla"
+
+msgid "Screen sharing"
+msgstr "Compartir pantalla"
+
+msgid "Sender and message"
+msgstr "Remitente y mensaje"
+
+msgid "Sender only"
+msgstr "Solo remitente"
+
+msgid "Server"
+msgstr "Servidor"
+
+msgid "Set"
+msgstr "Establecer"
+
+msgid "Set Passcode"
+msgstr "Establecer código"
+
+msgid "Set a passcode to lock Wazzup"
+msgstr "Establece un código para bloquear Wazzup"
+
+msgid "Set…"
+msgstr "Establecer…"
+
+msgid "Share your screen during calls"
+msgstr "Compartir la pantalla durante las llamadas"
+
+msgid "Show in folder"
+msgstr "Mostrar en la carpeta"
+
+msgid "Show in the top bar"
+msgstr "Mostrar en la barra superior"
+
+msgid "Show notifications"
+msgstr "Mostrar notificaciones"
+
+msgid "Show the number of unread chats on the app icon"
+msgstr "Mostrar el número de chats sin leer en el icono"
+
+msgid "Spelling"
+msgstr "Ortografía"
+
+msgid "Start Wazzup in background when you sign in"
+msgstr "Iniciar Wazzup en segundo plano al acceder"
+
+msgid "Start in background"
+msgstr "Iniciar en segundo plano"
+
+msgid "Strong"
+msgstr "Fuerte"
+
+msgid "Style"
+msgstr "Estilo"
+
+msgid "Supported files"
+msgstr "Archivos compatibles"
+
+msgid "System default"
+msgstr "Predeterminado del sistema"
+
+msgid "The current passcode is wrong, or you need to wait before trying again."
+msgstr "El código actual es incorrecto o debes esperar antes de volver a intentarlo."
+
+msgid "The page closed unexpectedly several times."
+msgstr "La página se cerró inesperadamente varias veces."
+
+msgid "The passcode could not be saved."
+msgstr "No se pudo guardar el código."
+
+msgid "The passcode needs at least {length} characters."
+msgstr "El código debe tener al menos {length} caracteres."
+
+msgid "The two new passcodes are different."
+msgstr "Los dos códigos nuevos no coinciden."
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "Too many attempts"
+msgstr "Demasiados intentos"
+
+msgid "Top bar icon"
+msgstr "Icono de la barra superior"
+
+msgid "Try Again"
+msgstr "Reintentar"
+
+msgid "Turn off if the window stays black or flickers"
+msgstr "Desactívala si la ventana se queda en negro o parpadea"
+
+msgid "Type"
+msgstr "Tipo"
+
+msgid "Underline mistakes while you type"
+msgstr "Subrayar los errores mientras escribes"
+
+msgid "Unlock"
+msgstr "Desbloquear"
+
+msgid "Unread badge"
+msgstr "Contador de no leídos"
+
+msgid "Use at least {length} characters."
+msgstr "Usa al menos {length} caracteres."
+
+msgid "Use system settings"
+msgstr "Usar la configuración del sistema"
+
+msgid "Username"
+msgstr "Nombre de usuario"
+
+msgid "Video calls"
+msgstr "Videollamadas"
+
+msgid "Voice messages and calls"
+msgstr "Mensajes de voz y llamadas"
+
+msgid "Wazzup can be locked"
+msgstr "Wazzup se puede bloquear"
+
+msgid "Wazzup is locked"
+msgstr "Wazzup está bloqueado"
+
+msgid "Wazzup will no longer be locked."
+msgstr "Wazzup ya no se bloqueará."
+
+msgid "WhatsApp Stopped Working"
+msgstr "WhatsApp dejó de funcionar"
+
+msgid "WhatsApp may use"
+msgstr "WhatsApp puede usar"
+
+msgid "WhatsApp on your GNOME desktop"
+msgstr "WhatsApp en tu escritorio GNOME"
+
+msgid "Wrong passcode"
+msgstr "Código incorrecto"
+
+msgid "{description}. Wazzup will try again automatically."
+msgstr "{description}. Wazzup lo volverá a intentar automáticamente."
+
+msgid "{done} of {total}"
+msgstr "{done} de {total}"
+
+msgid "{reason}. Try again in {seconds} s."
+msgstr "{reason}. Vuelve a intentarlo en {seconds} s."
+
+msgid "{count} unread chat"
+msgid_plural "{count} unread chats"
+msgstr[0] "{count} chat sin leer"
+msgstr[1] "{count} chats sin leer"

@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use adw::prelude::*;
 
+use crate::i18n::{Language, t, t_with};
 use crate::lock::{AppLock, MINIMUM_LENGTH, PasscodeProblem};
 use crate::preferences::{
     CloseAction, NotificationDetail, PreferenceStore, ThemeChoice, TrayStyle, Veil,
@@ -58,7 +59,7 @@ pub fn build(
     password: &Rc<ProxyPassword>,
 ) -> adw::PreferencesDialog {
     let dialog = adw::PreferencesDialog::builder()
-        .title("Preferences")
+        .title(t("Preferences"))
         .search_enabled(false)
         .build();
     dialog.add(&general_page(store));
@@ -77,8 +78,8 @@ fn switch_row(
     write: fn(&mut crate::preferences::Preferences, bool),
 ) -> adw::SwitchRow {
     let row = adw::SwitchRow::builder()
-        .title(title)
-        .subtitle(subtitle)
+        .title(t(title))
+        .subtitle(t(subtitle))
         .active(read(&store.snapshot()))
         .build();
     let store = Rc::clone(store);
@@ -96,7 +97,8 @@ fn choice_row<T: Copy + PartialEq + 'static>(
     read: fn(&crate::preferences::Preferences) -> T,
     write: fn(&mut crate::preferences::Preferences, T),
 ) -> adw::ComboRow {
-    let labels: Vec<&str> = choices.iter().map(|(_, label)| *label).collect();
+    let labels: Vec<String> = choices.iter().map(|(_, label)| t(label)).collect();
+    let labels: Vec<&str> = labels.iter().map(String::as_str).collect();
     let current = read(&store.snapshot());
     let selected = choices
         .iter()
@@ -104,7 +106,7 @@ fn choice_row<T: Copy + PartialEq + 'static>(
         .and_then(|index| u32::try_from(index).ok())
         .unwrap_or_default();
     let row = adw::ComboRow::builder()
-        .title(title)
+        .title(t(title))
         .model(&gtk::StringList::new(&labels))
         .selected(selected)
         .build();
@@ -131,7 +133,7 @@ fn page(title: &str, icon: &str, groups: &[adw::PreferencesGroup]) -> adw::Prefe
 }
 
 fn group(title: &str, rows: &[&gtk::Widget]) -> adw::PreferencesGroup {
-    let group = adw::PreferencesGroup::builder().title(title).build();
+    let group = adw::PreferencesGroup::builder().title(t(title)).build();
     for row in rows {
         group.add(*row);
     }
@@ -178,10 +180,24 @@ fn general_page(store: &Rc<PreferenceStore>) -> adw::PreferencesPage {
                     login.upcast_ref(),
                 ],
             ),
+            language_group(store),
             spelling_group(store),
             advanced_group(store),
         ],
     )
+}
+
+fn language_group(store: &Rc<PreferenceStore>) -> adw::PreferencesGroup {
+    let language = choice_row(
+        store,
+        "Interface language",
+        &Language::CHOICES,
+        |preferences| preferences.language,
+        |preferences, language| preferences.language = language,
+    );
+    let interface = group("Language", &[language.upcast_ref()]);
+    interface.set_description(Some(&t(RESTART_NOTE)));
+    interface
 }
 
 fn advanced_group(store: &Rc<PreferenceStore>) -> adw::PreferencesGroup {
@@ -193,7 +209,7 @@ fn advanced_group(store: &Rc<PreferenceStore>) -> adw::PreferencesGroup {
         |preferences, active| preferences.hardware_acceleration = active,
     );
     let advanced = group("Advanced", &[acceleration.upcast_ref()]);
-    advanced.set_description(Some(RESTART_NOTE));
+    advanced.set_description(Some(&t(RESTART_NOTE)));
     advanced
 }
 
@@ -206,8 +222,8 @@ fn spelling_group(store: &Rc<PreferenceStore>) -> adw::PreferencesGroup {
         |preferences, active| preferences.spell_check = active,
     );
     let languages = adw::ExpanderRow::builder()
-        .title("Languages")
-        .subtitle("Right-click a highlighted word for suggestions")
+        .title(t("Languages"))
+        .subtitle(t("Right-click a highlighted word for suggestions"))
         .build();
     let chosen = store.snapshot().spell_languages;
     for (code, name) in crate::spelling::DICTIONARIES {
@@ -239,7 +255,7 @@ fn spelling_group(store: &Rc<PreferenceStore>) -> adw::PreferencesGroup {
         .sync_create()
         .build();
     let spelling = group("Spelling", &[enabled.upcast_ref(), languages.upcast_ref()]);
-    spelling.set_description(Some(RESTART_NOTE));
+    spelling.set_description(Some(&t(RESTART_NOTE)));
     spelling
 }
 
@@ -326,10 +342,10 @@ enum PasscodeTask {
 }
 
 fn lock_group(store: &Rc<PreferenceStore>, lock: &Rc<AppLock>) -> adw::PreferencesGroup {
-    let passcode = adw::ActionRow::builder().title("Passcode").build();
+    let passcode = adw::ActionRow::builder().title(t("Passcode")).build();
     let edit = gtk::Button::builder().valign(gtk::Align::Center).build();
     let remove = gtk::Button::builder()
-        .label("Remove")
+        .label(t("Remove"))
         .valign(gtk::Align::Center)
         .css_classes(["destructive-action"])
         .build();
@@ -368,12 +384,13 @@ fn lock_group(store: &Rc<PreferenceStore>, lock: &Rc<AppLock>) -> adw::Preferenc
         ];
         Rc::new(move || {
             let protected = lock.has_passcode();
-            passcode.set_subtitle(if protected {
-                "Wazzup can be locked"
+            let (subtitle, action) = if protected {
+                (t("Wazzup can be locked"), t("Change…"))
             } else {
-                "Set a passcode to lock Wazzup"
-            });
-            edit.set_label(if protected { "Change…" } else { "Set…" });
+                (t("Set a passcode to lock Wazzup"), t("Set…"))
+            };
+            passcode.set_subtitle(&subtitle);
+            edit.set_label(&action);
             remove.set_visible(protected);
             for option in &options {
                 option.set_sensitive(protected);
@@ -441,7 +458,7 @@ fn privacy_page(store: &Rc<PreferenceStore>, lock: &Rc<AppLock>) -> adw::Prefere
         |preferences| preferences.veil,
         |preferences, level| preferences.veil = level,
     );
-    veil.set_subtitle("Hide names and messages until you point at them");
+    veil.set_subtitle(&t("Hide names and messages until you point at them"));
 
     page(
         "Privacy",
@@ -462,7 +479,7 @@ fn privacy_page(store: &Rc<PreferenceStore>, lock: &Rc<AppLock>) -> adw::Prefere
 }
 
 fn secret_row(title: &str) -> adw::PasswordEntryRow {
-    adw::PasswordEntryRow::builder().title(title).build()
+    adw::PasswordEntryRow::builder().title(t(title)).build()
 }
 
 fn ask_passcode(
@@ -481,21 +498,17 @@ fn ask_passcode(
     for row in [&current, &fresh, &confirmation].into_iter().flatten() {
         list.append(row);
     }
+    let length_rule = t_with(
+        "Use at least {length} characters.",
+        &[("length", &MINIMUM_LENGTH)],
+    );
     let (heading, body, action) = match task {
-        PasscodeTask::Create => (
-            "Set Passcode",
-            format!("Use at least {MINIMUM_LENGTH} characters."),
-            "Set",
-        ),
-        PasscodeTask::Change => (
-            "Change Passcode",
-            format!("Use at least {MINIMUM_LENGTH} characters."),
-            "Change",
-        ),
+        PasscodeTask::Create => (t("Set Passcode"), length_rule, t("Set")),
+        PasscodeTask::Change => (t("Change Passcode"), length_rule, t("Change")),
         PasscodeTask::Remove => (
-            "Remove Passcode",
-            "Wazzup will no longer be locked.".to_owned(),
-            "Remove",
+            t("Remove Passcode"),
+            t("Wazzup will no longer be locked."),
+            t("Remove"),
         ),
     };
     let dialog = adw::AlertDialog::builder()
@@ -505,7 +518,7 @@ fn ask_passcode(
         .close_response("cancel")
         .default_response("apply")
         .build();
-    dialog.add_responses(&[("cancel", "Cancel"), ("apply", action)]);
+    dialog.add_responses(&[("cancel", &t("Cancel")), ("apply", &action)]);
     dialog.set_response_appearance(
         "apply",
         if task == PasscodeTask::Remove {
@@ -537,20 +550,21 @@ fn ask_passcode(
 
 fn explain_problem(anchor: &gtk::Button, problem: PasscodeProblem) {
     let body = match problem {
-        PasscodeProblem::TooShort => {
-            format!("The passcode needs at least {MINIMUM_LENGTH} characters.")
-        }
-        PasscodeProblem::Mismatch => "The two new passcodes are different.".to_owned(),
+        PasscodeProblem::TooShort => t_with(
+            "The passcode needs at least {length} characters.",
+            &[("length", &MINIMUM_LENGTH)],
+        ),
+        PasscodeProblem::Mismatch => t("The two new passcodes are different."),
         PasscodeProblem::WrongCurrent => {
-            "The current passcode is wrong, or you need to wait before trying again.".to_owned()
+            t("The current passcode is wrong, or you need to wait before trying again.")
         }
-        PasscodeProblem::Unavailable => "The passcode could not be saved.".to_owned(),
+        PasscodeProblem::Unavailable => t("The passcode could not be saved."),
     };
     let dialog = adw::AlertDialog::builder()
-        .heading("Passcode Not Changed")
+        .heading(t("Passcode Not Changed"))
         .body(body)
         .build();
-    dialog.add_response("ok", "OK");
+    dialog.add_response("ok", &t("OK"));
     dialog.present(Some(anchor));
 }
 
@@ -561,7 +575,7 @@ fn text_row(
     write: fn(&mut crate::preferences::Preferences, String),
 ) -> adw::EntryRow {
     let row = adw::EntryRow::builder()
-        .title(title)
+        .title(t(title))
         .text(read(&store.snapshot()))
         .show_apply_button(true)
         .build();
@@ -595,7 +609,7 @@ fn network_page(store: &Rc<PreferenceStore>, password: &Rc<ProxyPassword>) -> ad
         |preferences, host| preferences.proxy.host = host,
     );
     let port = adw::SpinRow::with_range(1.0, 65535.0, 1.0);
-    port.set_title("Port");
+    port.set_title(&t("Port"));
     port.set_value(f64::from(store.snapshot().proxy.port));
     {
         let store = Rc::clone(store);
@@ -612,7 +626,7 @@ fn network_page(store: &Rc<PreferenceStore>, password: &Rc<ProxyPassword>) -> ad
         |preferences, username| preferences.proxy.username = username,
     );
     let secret = adw::PasswordEntryRow::builder()
-        .title("Password")
+        .title(t("Password"))
         .show_apply_button(true)
         .text(password.current().unwrap_or_default())
         .build();
@@ -643,7 +657,7 @@ fn network_page(store: &Rc<PreferenceStore>, password: &Rc<ProxyPassword>) -> ad
         &[
             {
                 let connection = group("Connection", &[mode.upcast_ref()]);
-                connection.set_description(Some(RESTART_NOTE));
+                connection.set_description(Some(&t(RESTART_NOTE)));
                 connection
             },
             group(

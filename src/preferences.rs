@@ -6,6 +6,7 @@ use gtk::glib;
 use serde::{Deserialize, Serialize};
 
 use crate::config::{APP_ID, Profile};
+use crate::i18n::Language;
 use crate::proxy::ProxySettings;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -128,6 +129,7 @@ pub struct Preferences {
     pub proxy: ProxySettings,
     pub hardware_acceleration: bool,
     pub window: WindowSize,
+    pub language: Language,
 }
 
 impl Default for Preferences {
@@ -154,6 +156,7 @@ impl Default for Preferences {
             proxy: ProxySettings::default(),
             hardware_acceleration: true,
             window: WindowSize::default(),
+            language: Language::System,
         }
     }
 }
