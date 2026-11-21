@@ -1,4 +1,5 @@
 use std::cell::{Cell, RefCell};
+use std::path::PathBuf;
 use std::rc::{Rc, Weak};
 
 use cef::{
@@ -12,8 +13,8 @@ use gtk::prelude::*;
 use super::canvas::BrowserCanvas;
 use super::input;
 use crate::engine::{
-    PageClient, PageHost, PageMessage, PaintLayer, PixelFrame, PopupArea, Viewport,
-    emulate_color_scheme,
+    DownloadControl, DownloadProgress, FileAnswer, FileRequest, MediaAccess, PageClient, PageHost,
+    PageMessage, PaintLayer, PixelFrame, PopupArea, Viewport, emulate_color_scheme,
 };
 
 const FRAME_RATE: i32 = 60;
@@ -25,6 +26,17 @@ pub trait SurfaceObserver {
     fn surface_closed(&self) {}
     fn companion_requested(&self, _width: i32, _height: i32) -> Option<BrowserSurface> {
         None
+    }
+    fn page_loaded(&self) {}
+    fn media_allowed(&self) -> MediaAccess {
+        MediaAccess::default()
+    }
+    fn download_target(&self, _suggested_name: &str) -> Option<PathBuf> {
+        None
+    }
+    fn download_progress(&self, _progress: DownloadProgress, _control: Option<DownloadControl>) {}
+    fn files_allowed(&self) -> bool {
+        true
     }
 }
 
@@ -178,6 +190,39 @@ impl PageHost for SurfaceCore {
         );
     }
 
+    fn page_loaded(&self) {
+        if let Some(observer) = self.observer() {
+            observer.page_loaded();
+        }
+    }
+
+    fn media_allowed(&self) -> MediaAccess {
+        self.observer()
+            .map_or_else(MediaAccess::default, |observer| observer.media_allowed())
+    }
+
+    fn download_target(&self, suggested_name: &str) -> Option<PathBuf> {
+        self.observer()?.download_target(suggested_name)
+    }
+
+    fn download_progress(&self, progress: DownloadProgress, control: Option<DownloadControl>) {
+        if let Some(observer) = self.observer() {
+            observer.download_progress(progress, control);
+        }
+    }
+
+    fn choose_files(&self, request: FileRequest, answer: FileAnswer) {
+        if !self
+            .observer()
+            .is_some_and(|observer| observer.files_allowed())
+        {
+            answer.dismiss();
+            return;
+        }
+        let parent = self.canvas.root().and_downcast::<gtk::Window>();
+        super::file_picker::present(parent.as_ref(), &request, answer);
+    }
+
     fn open_companion(&self, width: i32, height: i32) -> Option<Rc<dyn PageHost>> {
         let surface = self.observer()?.companion_requested(width, height)?;
         Some(surface.core as Rc<dyn PageHost>)
@@ -266,7 +311,15 @@ impl BrowserSurface {
         }
     }
 
+    pub fn apply_veil(&self, pixels: u32) {
+        self.run_script(&PageMessage::veil_script(pixels));
+    }
+
     pub fn activate_notification(&self, id: u64) {
+        self.run_script(&PageMessage::activation_script(id));
+    }
+
+    fn run_script(&self, code: &str) {
         let frame = self
             .core
             .browser
@@ -274,13 +327,7 @@ impl BrowserSurface {
             .as_ref()
             .and_then(ImplBrowser::main_frame);
         if let Some(frame) = frame {
-            frame.execute_java_script(
-                Some(&CefString::from(
-                    PageMessage::activation_script(id).as_str(),
-                )),
-                None,
-                0,
-            );
+            frame.execute_java_script(Some(&CefString::from(code)), None, 0);
         }
     }
 }

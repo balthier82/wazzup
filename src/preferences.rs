@@ -41,6 +41,27 @@ pub enum TrayStyle {
     Dark,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Veil {
+    #[default]
+    Off,
+    Light,
+    Medium,
+    Strong,
+}
+
+impl Veil {
+    pub fn pixels(self) -> u32 {
+        match self {
+            Self::Off => 0,
+            Self::Light => 4,
+            Self::Medium => 8,
+            Self::Strong => 14,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 #[allow(clippy::struct_excessive_bools)]
@@ -54,6 +75,13 @@ pub struct Preferences {
     pub unread_badge: bool,
     pub tray_icon: bool,
     pub tray_style: TrayStyle,
+    pub lock_on_start: bool,
+    pub lock_when_hidden: bool,
+    pub lock_after_minutes: u32,
+    pub allow_microphone: bool,
+    pub allow_camera: bool,
+    pub allow_screen_sharing: bool,
+    pub veil: Veil,
 }
 
 impl Default for Preferences {
@@ -68,6 +96,13 @@ impl Default for Preferences {
             unread_badge: true,
             tray_icon: true,
             tray_style: TrayStyle::Light,
+            lock_on_start: false,
+            lock_when_hidden: false,
+            lock_after_minutes: 0,
+            allow_microphone: true,
+            allow_camera: true,
+            allow_screen_sharing: true,
+            veil: Veil::Off,
         }
     }
 }
@@ -144,7 +179,14 @@ impl PreferenceStore {
 
 #[cfg(test)]
 mod tests {
-    use super::{CloseAction, NotificationDetail, Preferences, ThemeChoice};
+    use super::{CloseAction, NotificationDetail, Preferences, ThemeChoice, Veil};
+
+    #[test]
+    fn veil_levels_grow() {
+        assert_eq!(Veil::Off.pixels(), 0);
+        assert!(Veil::Light.pixels() < Veil::Medium.pixels());
+        assert!(Veil::Medium.pixels() < Veil::Strong.pixels());
+    }
 
     #[test]
     fn round_trips_through_toml() {

@@ -9,15 +9,17 @@ use crate::chat_link::ChatLink;
 use crate::config::Profile;
 use crate::desktop::{Autostart, XdgAutostart};
 use crate::launch::LaunchRequest;
+use crate::lock::AppLock;
 use crate::preferences::{PreferenceStore, Preferences, ThemeChoice};
 use crate::tray::{TrayCommand, TrayIcon};
-use crate::window::MainWindow;
+use crate::window::{MainWindow, Shared};
 
 pub struct WazzupApplication {
     inner: adw::Application,
     window: Rc<OnceCell<Rc<MainWindow>>>,
     store: Rc<PreferenceStore>,
     tray: Rc<RefCell<TrayIcon>>,
+    lock: Rc<AppLock>,
     tray_commands: async_channel::Receiver<TrayCommand>,
 }
 
@@ -33,6 +35,7 @@ impl WazzupApplication {
             window: Rc::default(),
             store: PreferenceStore::open(),
             tray: Rc::new(RefCell::new(tray)),
+            lock: AppLock::open(),
             tray_commands,
         };
         application.wire();
@@ -72,6 +75,7 @@ impl WazzupApplication {
         let window = Rc::clone(&self.window);
         let store = Rc::clone(&self.store);
         let tray = Rc::clone(&self.tray);
+        let lock = Rc::clone(&self.lock);
         self.inner
             .connect_command_line(move |application, command_line| {
                 let arguments: Vec<String> = command_line
@@ -81,13 +85,12 @@ impl WazzupApplication {
                     .map(|argument| argument.to_string_lossy().into_owned())
                     .collect();
                 let request = LaunchRequest::parse(&arguments);
-                handle(
-                    application,
-                    &window,
-                    (&store, &tray),
-                    &request,
-                    command_line,
-                );
+                let shared = Shared {
+                    store: &store,
+                    lock: &lock,
+                    tray: &tray,
+                };
+                handle(application, &window, &shared, &request, command_line);
                 glib::ExitCode::SUCCESS
             });
 
@@ -160,6 +163,15 @@ impl WazzupApplication {
             .build();
 
         let window = Rc::clone(&self.window);
+        let lock = gio::ActionEntry::builder("lock")
+            .activate(move |_: &adw::Application, _, _| {
+                if let Some(main_window) = window.get() {
+                    main_window.lock_now();
+                }
+            })
+            .build();
+
+        let window = Rc::clone(&self.window);
         let quit = gio::ActionEntry::builder("quit")
             .activate(
                 move |application: &adw::Application, _, _| match window.get() {
@@ -170,11 +182,13 @@ impl WazzupApplication {
             .build();
 
         self.inner
-            .add_action_entries([present, open_notification, preferences, about, quit]);
+            .add_action_entries([present, open_notification, preferences, about, lock, quit]);
         self.inner
             .set_accels_for_action("app.quit", &["<Control>q"]);
         self.inner
             .set_accels_for_action("app.preferences", &["<Control>comma"]);
+        self.inner
+            .set_accels_for_action("app.lock", &["<Control>l"]);
         self.inner
             .set_accels_for_action("win.reload", &["F5", "<Control>r"]);
     }
@@ -183,7 +197,7 @@ impl WazzupApplication {
 fn handle(
     application: &adw::Application,
     window: &OnceCell<Rc<MainWindow>>,
-    (store, tray): (&Rc<PreferenceStore>, &Rc<RefCell<TrayIcon>>),
+    shared: &Shared<'_>,
     request: &LaunchRequest,
     command_line: &gio::ApplicationCommandLine,
 ) {
@@ -198,9 +212,11 @@ fn handle(
         return;
     }
     let first_launch = window.get().is_none();
-    let main_window = window.get_or_init(|| MainWindow::new(application, store, tray));
+    let main_window = window.get_or_init(|| MainWindow::new(application, shared));
     let stay_hidden = request.in_background
-        || (first_launch && store.snapshot().start_in_background && request.chats.is_empty());
+        || (first_launch
+            && shared.store.snapshot().start_in_background
+            && request.chats.is_empty());
     let chats: Vec<ChatLink> = request
         .chats
         .iter()

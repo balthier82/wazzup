@@ -6,6 +6,8 @@ use std::rc::Rc;
 use cef::*;
 
 use super::cursor::css_name;
+use super::download::{DownloadControl, DownloadProgress};
+use super::file_dialog::{FileAnswer, FileRequest};
 use super::host::{PageHost, PaintLayer, PixelFrame, PopupArea};
 use super::page_message::{CHANNEL, PageMessage};
 use crate::config::HOME_HOST;
@@ -52,7 +54,19 @@ wrap_client! {
         }
 
         fn permission_handler(&self) -> Option<PermissionHandler> {
-            Some(PagePermissions::new())
+            Some(PagePermissions::new(Rc::clone(&self.host)))
+        }
+
+        fn download_handler(&self) -> Option<DownloadHandler> {
+            Some(PageDownloads::new(Rc::clone(&self.host)))
+        }
+
+        fn dialog_handler(&self) -> Option<DialogHandler> {
+            Some(PageDialogs::new(Rc::clone(&self.host)))
+        }
+
+        fn load_handler(&self) -> Option<LoadHandler> {
+            Some(PageLoading::new(Rc::clone(&self.host)))
         }
 
         fn on_process_message_received(
@@ -216,7 +230,7 @@ wrap_life_span_handler! {
             _popup_id: c_int,
             target_url: Option<&CefString>,
             _target_frame_name: Option<&CefString>,
-            _target_disposition: WindowOpenDisposition,
+            target_disposition: WindowOpenDisposition,
             _user_gesture: c_int,
             popup_features: Option<&PopupFeatures>,
             window_info: Option<&mut WindowInfo>,
@@ -226,6 +240,7 @@ wrap_life_span_handler! {
             _no_javascript_access: Option<&mut c_int>,
         ) -> c_int {
             let address = text(target_url);
+            tracing::debug!(%address, disposition = ?target_disposition, "popup requested");
             if !opens_inside(&address) {
                 self.host.open_externally(&address);
                 return 1;
@@ -278,6 +293,7 @@ wrap_request_handler! {
             let address = request
                 .map_or_default(|request| CefString::from(&request.url()).to_string());
             let main_frame = frame.is_some_and(|frame| frame.is_main() == 1);
+            tracing::debug!(%address, main_frame, user_gesture, "navigation requested");
             match policy().classify(&address) {
                 Destination::Inside => 0,
                 Destination::Blocked => {
@@ -304,6 +320,7 @@ wrap_request_handler! {
             _target_disposition: WindowOpenDisposition,
             _user_gesture: c_int,
         ) -> c_int {
+            tracing::debug!(address = %text(target_url), "tab navigation requested");
             self.host.open_externally(&text(target_url));
             1
         }
@@ -324,7 +341,9 @@ wrap_request_handler! {
 }
 
 wrap_permission_handler! {
-    struct PagePermissions;
+    struct PagePermissions {
+        host: Rc<dyn PageHost>,
+    }
 
     impl PermissionHandler {
         fn on_request_media_access_permission(
@@ -339,12 +358,17 @@ wrap_permission_handler! {
                 return 0;
             };
             let origin = text(requesting_origin);
-            if is_trusted(&origin) {
-                tracing::info!(requested_permissions, "media access granted");
-                callback.cont(requested_permissions);
+            let granted = if is_trusted(&origin) {
+                self.host.media_allowed().restrict_mask(requested_permissions)
             } else {
-                tracing::warn!(%origin, "media access refused");
+                0
+            };
+            if granted == 0 {
+                tracing::warn!(%origin, requested_permissions, "media access refused");
                 callback.cancel();
+            } else {
+                tracing::info!(requested_permissions, granted, "media access granted");
+                callback.cont(granted);
             }
             1
         }
@@ -368,6 +392,112 @@ wrap_permission_handler! {
             };
             tracing::info!(%origin, requested_permissions, ?verdict, "permission prompt answered");
             callback.cont(verdict);
+            1
+        }
+    }
+}
+
+wrap_download_handler! {
+    struct PageDownloads {
+        host: Rc<dyn PageHost>,
+    }
+
+    impl DownloadHandler {
+        fn can_download(
+            &self,
+            _browser: Option<&mut Browser>,
+            url: Option<&CefString>,
+            request_method: Option<&CefString>,
+        ) -> c_int {
+            tracing::debug!(address = %text(url), method = %text(request_method), "download allowed");
+            1
+        }
+
+        fn on_before_download(
+            &self,
+            _browser: Option<&mut Browser>,
+            _download_item: Option<&mut DownloadItem>,
+            suggested_name: Option<&CefString>,
+            callback: Option<&mut BeforeDownloadCallback>,
+        ) -> c_int {
+            let Some(callback) = callback else {
+                return 0;
+            };
+            tracing::debug!(name = %text(suggested_name), "download requested");
+            let Some(target) = self.host.download_target(&text(suggested_name)) else {
+                return 0;
+            };
+            callback.cont(Some(&CefString::from(target.to_string_lossy().as_ref())), 0);
+            1
+        }
+
+        fn on_download_updated(
+            &self,
+            _browser: Option<&mut Browser>,
+            download_item: Option<&mut DownloadItem>,
+            callback: Option<&mut DownloadItemCallback>,
+        ) {
+            let Some(item) = download_item else {
+                return;
+            };
+            let progress = DownloadProgress::read(item);
+            if progress.path.as_os_str().is_empty() {
+                return;
+            }
+            let control = callback.map(|callback| DownloadControl::new(callback.clone()));
+            self.host.download_progress(progress, control);
+        }
+    }
+}
+
+wrap_load_handler! {
+    struct PageLoading {
+        host: Rc<dyn PageHost>,
+    }
+
+    impl LoadHandler {
+        fn on_load_end(
+            &self,
+            _browser: Option<&mut Browser>,
+            frame: Option<&mut Frame>,
+            _http_status_code: c_int,
+        ) {
+            if frame.is_some_and(|frame| frame.is_main() == 1) {
+                self.host.page_loaded();
+            }
+        }
+    }
+}
+
+wrap_dialog_handler! {
+    struct PageDialogs {
+        host: Rc<dyn PageHost>,
+    }
+
+    impl DialogHandler {
+        fn on_file_dialog(
+            &self,
+            _browser: Option<&mut Browser>,
+            mode: FileDialogMode,
+            title: Option<&CefString>,
+            default_file_path: Option<&CefString>,
+            accept_filters: Option<&mut CefStringList>,
+            _accept_extensions: Option<&mut CefStringList>,
+            _accept_descriptions: Option<&mut CefStringList>,
+            callback: Option<&mut FileDialogCallback>,
+        ) -> c_int {
+            let Some(callback) = callback else {
+                return 0;
+            };
+            tracing::debug!(?mode, "file dialog requested");
+            let request = FileRequest::new(
+                mode,
+                title,
+                default_file_path,
+                accept_filters.as_deref(),
+            );
+            self.host
+                .choose_files(request, FileAnswer::new(callback.clone()));
             1
         }
     }

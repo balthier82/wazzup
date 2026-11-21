@@ -1,4 +1,5 @@
 mod canvas;
+mod file_picker;
 mod input;
 mod keymap;
 mod surface;

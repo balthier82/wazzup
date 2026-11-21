@@ -5,14 +5,22 @@ use gtk::glib;
 
 use crate::browser::{BrowserSurface, SurfaceObserver};
 use crate::config::APP_NAME;
+use crate::engine::MediaAccess;
+
+pub type MediaPolicy = Rc<dyn Fn() -> MediaAccess>;
 
 pub struct CallWindow {
     window: adw::Window,
     surface: BrowserSurface,
+    media_policy: MediaPolicy,
 }
 
 impl CallWindow {
-    pub fn open(application: &adw::Application, width: i32, height: i32) -> BrowserSurface {
+    pub fn open(
+        application: &adw::Application,
+        (width, height): (i32, i32),
+        media_policy: MediaPolicy,
+    ) -> BrowserSurface {
         let call = Rc::new_cyclic(|this: &Weak<Self>| {
             let observer: Weak<dyn SurfaceObserver> = this.clone();
             let surface = BrowserSurface::new(observer);
@@ -26,7 +34,11 @@ impl CallWindow {
                 .default_height(height.max(360))
                 .content(&toolbar)
                 .build();
-            Self { window, surface }
+            Self {
+                window,
+                surface,
+                media_policy,
+            }
         });
         let keeper = Rc::clone(&call);
         call.window.connect_close_request(move |_| {
@@ -53,5 +65,9 @@ impl SurfaceObserver for CallWindow {
 
     fn surface_closed(&self) {
         self.window.destroy();
+    }
+
+    fn media_allowed(&self) -> MediaAccess {
+        (self.media_policy)()
     }
 }

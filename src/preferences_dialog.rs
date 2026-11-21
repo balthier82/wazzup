@@ -2,8 +2,9 @@ use std::rc::Rc;
 
 use adw::prelude::*;
 
+use crate::lock::{AppLock, MINIMUM_LENGTH, PasscodeProblem};
 use crate::preferences::{
-    CloseAction, NotificationDetail, PreferenceStore, ThemeChoice, TrayStyle,
+    CloseAction, NotificationDetail, PreferenceStore, ThemeChoice, TrayStyle, Veil,
 };
 
 const THEMES: [(ThemeChoice, &str); 3] = [
@@ -17,13 +18,29 @@ const TRAY_STYLES: [(TrayStyle, &str); 2] = [
     (TrayStyle::Dark, "Dark, for light top bars"),
 ];
 
+const VEILS: [(Veil, &str); 4] = [
+    (Veil::Off, "Off"),
+    (Veil::Light, "Light"),
+    (Veil::Medium, "Medium"),
+    (Veil::Strong, "Strong"),
+];
+
+const IDLE_MINUTES: [(u32, &str); 6] = [
+    (0, "Never"),
+    (1, "After 1 minute"),
+    (5, "After 5 minutes"),
+    (15, "After 15 minutes"),
+    (30, "After 30 minutes"),
+    (60, "After 1 hour"),
+];
+
 const DETAILS: [(NotificationDetail, &str); 3] = [
     (NotificationDetail::SenderAndMessage, "Sender and message"),
     (NotificationDetail::SenderOnly, "Sender only"),
     (NotificationDetail::Nothing, "Only “New message”"),
 ];
 
-pub fn build(store: &Rc<PreferenceStore>) -> adw::PreferencesDialog {
+pub fn build(store: &Rc<PreferenceStore>, lock: &Rc<AppLock>) -> adw::PreferencesDialog {
     let dialog = adw::PreferencesDialog::builder()
         .title("Preferences")
         .search_enabled(false)
@@ -31,6 +48,7 @@ pub fn build(store: &Rc<PreferenceStore>) -> adw::PreferencesDialog {
     dialog.add(&general_page(store));
     dialog.add(&appearance_page(store));
     dialog.add(&notifications_page(store));
+    dialog.add(&privacy_page(store, lock));
     dialog
 }
 
@@ -218,4 +236,240 @@ fn notifications_page(store: &Rc<PreferenceStore>) -> adw::PreferencesPage {
             group("App icon", &[badge.upcast_ref()]),
         ],
     )
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PasscodeTask {
+    Create,
+    Change,
+    Remove,
+}
+
+fn lock_group(store: &Rc<PreferenceStore>, lock: &Rc<AppLock>) -> adw::PreferencesGroup {
+    let passcode = adw::ActionRow::builder().title("Passcode").build();
+    let edit = gtk::Button::builder().valign(gtk::Align::Center).build();
+    let remove = gtk::Button::builder()
+        .label("Remove")
+        .valign(gtk::Align::Center)
+        .css_classes(["destructive-action"])
+        .build();
+    passcode.add_suffix(&remove);
+    passcode.add_suffix(&edit);
+
+    let on_start = switch_row(
+        store,
+        "Lock on start",
+        "Ask for the passcode every time Wazzup opens",
+        |preferences| preferences.lock_on_start,
+        |preferences, active| preferences.lock_on_start = active,
+    );
+    let when_hidden = switch_row(
+        store,
+        "Lock when hidden",
+        "Lock as soon as the window is closed or hidden",
+        |preferences| preferences.lock_when_hidden,
+        |preferences, active| preferences.lock_when_hidden = active,
+    );
+    let idle = choice_row(
+        store,
+        "Lock when idle",
+        &IDLE_MINUTES,
+        |preferences| preferences.lock_after_minutes,
+        |preferences, minutes| preferences.lock_after_minutes = minutes,
+    );
+
+    let refresh: Rc<dyn Fn()> = {
+        let lock = Rc::clone(lock);
+        let (passcode, edit, remove) = (passcode.clone(), edit.clone(), remove.clone());
+        let options = [
+            on_start.clone().upcast::<gtk::Widget>(),
+            when_hidden.clone().upcast(),
+            idle.clone().upcast(),
+        ];
+        Rc::new(move || {
+            let protected = lock.has_passcode();
+            passcode.set_subtitle(if protected {
+                "Wazzup can be locked"
+            } else {
+                "Set a passcode to lock Wazzup"
+            });
+            edit.set_label(if protected { "Change…" } else { "Set…" });
+            remove.set_visible(protected);
+            for option in &options {
+                option.set_sensitive(protected);
+            }
+        })
+    };
+    refresh();
+    {
+        let lock = Rc::clone(lock);
+        let refresh = Rc::clone(&refresh);
+        edit.connect_clicked(move |button| {
+            let task = if lock.has_passcode() {
+                PasscodeTask::Change
+            } else {
+                PasscodeTask::Create
+            };
+            ask_passcode(button, &lock, task, Rc::clone(&refresh));
+        });
+    }
+    {
+        let lock = Rc::clone(lock);
+        let refresh = Rc::clone(&refresh);
+        remove.connect_clicked(move |button| {
+            ask_passcode(button, &lock, PasscodeTask::Remove, Rc::clone(&refresh));
+        });
+    }
+
+    group(
+        "App lock",
+        &[
+            passcode.upcast_ref(),
+            on_start.upcast_ref(),
+            when_hidden.upcast_ref(),
+            idle.upcast_ref(),
+        ],
+    )
+}
+
+fn privacy_page(store: &Rc<PreferenceStore>, lock: &Rc<AppLock>) -> adw::PreferencesPage {
+    let microphone = switch_row(
+        store,
+        "Microphone",
+        "Voice messages and calls",
+        |preferences| preferences.allow_microphone,
+        |preferences, active| preferences.allow_microphone = active,
+    );
+    let camera = switch_row(
+        store,
+        "Camera",
+        "Video calls",
+        |preferences| preferences.allow_camera,
+        |preferences, active| preferences.allow_camera = active,
+    );
+    let screen = switch_row(
+        store,
+        "Screen sharing",
+        "Share your screen during calls",
+        |preferences| preferences.allow_screen_sharing,
+        |preferences, active| preferences.allow_screen_sharing = active,
+    );
+    let veil = choice_row(
+        store,
+        "Blur chats",
+        &VEILS,
+        |preferences| preferences.veil,
+        |preferences, level| preferences.veil = level,
+    );
+    veil.set_subtitle("Hide names and messages until you point at them");
+
+    page(
+        "Privacy",
+        "security-high-symbolic",
+        &[
+            lock_group(store, lock),
+            group(
+                "WhatsApp may use",
+                &[
+                    microphone.upcast_ref(),
+                    camera.upcast_ref(),
+                    screen.upcast_ref(),
+                ],
+            ),
+            group("Screen privacy", &[veil.upcast_ref()]),
+        ],
+    )
+}
+
+fn secret_row(title: &str) -> adw::PasswordEntryRow {
+    adw::PasswordEntryRow::builder().title(title).build()
+}
+
+fn ask_passcode(
+    anchor: &gtk::Button,
+    lock: &Rc<AppLock>,
+    task: PasscodeTask,
+    refresh: Rc<dyn Fn()>,
+) {
+    let current = (task != PasscodeTask::Create).then(|| secret_row("Current passcode"));
+    let fresh = (task != PasscodeTask::Remove).then(|| secret_row("New passcode"));
+    let confirmation = (task != PasscodeTask::Remove).then(|| secret_row("Repeat new passcode"));
+    let list = gtk::ListBox::builder()
+        .selection_mode(gtk::SelectionMode::None)
+        .css_classes(["boxed-list"])
+        .build();
+    for row in [&current, &fresh, &confirmation].into_iter().flatten() {
+        list.append(row);
+    }
+    let (heading, body, action) = match task {
+        PasscodeTask::Create => (
+            "Set Passcode",
+            format!("Use at least {MINIMUM_LENGTH} characters."),
+            "Set",
+        ),
+        PasscodeTask::Change => (
+            "Change Passcode",
+            format!("Use at least {MINIMUM_LENGTH} characters."),
+            "Change",
+        ),
+        PasscodeTask::Remove => (
+            "Remove Passcode",
+            "Wazzup will no longer be locked.".to_owned(),
+            "Remove",
+        ),
+    };
+    let dialog = adw::AlertDialog::builder()
+        .heading(heading)
+        .body(body)
+        .extra_child(&list)
+        .close_response("cancel")
+        .default_response("apply")
+        .build();
+    dialog.add_responses(&[("cancel", "Cancel"), ("apply", action)]);
+    dialog.set_response_appearance(
+        "apply",
+        if task == PasscodeTask::Remove {
+            adw::ResponseAppearance::Destructive
+        } else {
+            adw::ResponseAppearance::Suggested
+        },
+    );
+    let lock = Rc::clone(lock);
+    let anchor_widget = anchor.clone();
+    dialog.connect_response(Some("apply"), move |_, _| {
+        let text =
+            |row: &Option<adw::PasswordEntryRow>| row.as_ref().map(|row| row.text().to_string());
+        let outcome = match task {
+            PasscodeTask::Remove => lock.remove_passcode(&text(&current).unwrap_or_default()),
+            PasscodeTask::Create | PasscodeTask::Change => lock.set_passcode(
+                text(&current).as_deref(),
+                &text(&fresh).unwrap_or_default(),
+                &text(&confirmation).unwrap_or_default(),
+            ),
+        };
+        refresh();
+        if let Err(problem) = outcome {
+            explain_problem(&anchor_widget, problem);
+        }
+    });
+    dialog.present(Some(anchor));
+}
+
+fn explain_problem(anchor: &gtk::Button, problem: PasscodeProblem) {
+    let body = match problem {
+        PasscodeProblem::TooShort => {
+            format!("The passcode needs at least {MINIMUM_LENGTH} characters.")
+        }
+        PasscodeProblem::Mismatch => "The two new passcodes are different.".to_owned(),
+        PasscodeProblem::WrongCurrent => {
+            "The current passcode is wrong, or you need to wait before trying again.".to_owned()
+        }
+        PasscodeProblem::Unavailable => "The passcode could not be saved.".to_owned(),
+    };
+    let dialog = adw::AlertDialog::builder()
+        .heading("Passcode Not Changed")
+        .body(body)
+        .build();
+    dialog.add_response("ok", "OK");
+    dialog.present(Some(anchor));
 }

@@ -3,6 +3,7 @@ use serde::Deserialize;
 pub const CHANNEL: &str = "wazzup.page";
 pub const POST_FUNCTION: &str = "__wazzupPost";
 pub const ACTIVATE_FUNCTION: &str = "__wazzupActivate";
+pub const VEIL_FUNCTION: &str = "__wazzupVeil";
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
@@ -25,6 +26,10 @@ impl PageMessage {
 
     pub fn activation_script(id: u64) -> String {
         format!("globalThis.{ACTIVATE_FUNCTION}?.({id});")
+    }
+
+    pub fn veil_script(pixels: u32) -> String {
+        format!("globalThis.{VEIL_FUNCTION}?.({pixels});")
     }
 }
 
@@ -64,6 +69,11 @@ mod tests {
     fn rejects_garbage() {
         assert_eq!(PageMessage::parse("{\"kind\":\"unknown\"}"), None);
         assert_eq!(PageMessage::parse("not json"), None);
+    }
+
+    #[test]
+    fn builds_veil_script() {
+        assert_eq!(PageMessage::veil_script(6), "globalThis.__wazzupVeil?.(6);");
     }
 
     #[test]

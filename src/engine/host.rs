@@ -1,5 +1,9 @@
+use std::path::PathBuf;
 use std::rc::Rc;
 
+use super::download::{DownloadControl, DownloadProgress};
+use super::file_dialog::{FileAnswer, FileRequest};
+use super::media::MediaAccess;
 use super::page_message::PageMessage;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -51,4 +55,9 @@ pub trait PageHost {
     fn page_message(&self, message: PageMessage);
     fn open_externally(&self, address: &str);
     fn open_companion(&self, width: i32, height: i32) -> Option<Rc<dyn PageHost>>;
+    fn page_loaded(&self);
+    fn media_allowed(&self) -> MediaAccess;
+    fn download_target(&self, suggested_name: &str) -> Option<PathBuf>;
+    fn download_progress(&self, progress: DownloadProgress, control: Option<DownloadControl>);
+    fn choose_files(&self, request: FileRequest, answer: FileAnswer);
 }

@@ -1,7 +1,10 @@
 mod appearance;
 mod client;
 mod cursor;
+mod download;
+mod file_dialog;
 mod host;
+mod media;
 mod page_message;
 mod process;
 mod pump;
@@ -10,6 +13,9 @@ mod runtime;
 
 pub use appearance::emulate_color_scheme;
 pub use client::PageClient;
+pub use download::{DownloadControl, DownloadProgress, DownloadState};
+pub use file_dialog::{FileAnswer, FileChoice, FileRequest};
 pub use host::{PageHost, PaintLayer, PixelFrame, PopupArea, Viewport};
+pub use media::MediaAccess;
 pub use page_message::PageMessage;
 pub use runtime::{Engine, run_child_process};

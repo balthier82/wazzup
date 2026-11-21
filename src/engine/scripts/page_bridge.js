@@ -88,6 +88,31 @@
   setTimeout(installNotification, 0);
   document.addEventListener("readystatechange", installNotification);
 
+  if (registry === globalThis.__wazzupRegistry) {
+    const veilSelectors = [
+      "#pane-side [role='row']",
+      "#pane-side [role='listitem']",
+      "#main [role='row']",
+      "#main [role='application'] img",
+      "#main video",
+    ];
+    const veilCss = (pixels) =>
+      pixels > 0
+        ? `${veilSelectors.join(",")}{filter:blur(${pixels}px);transition:filter .15s ease}` +
+          `${veilSelectors.map((selector) => `${selector}:hover`).join(",")}{filter:none}`
+        : "";
+    const applyVeil = (pixels) => {
+      let style = document.getElementById("wazzup-veil");
+      if (!style) {
+        style = document.createElement("style");
+        style.id = "wazzup-veil";
+        (document.head ?? document.documentElement).append(style);
+      }
+      style.textContent = veilCss(Number(pixels) || 0);
+    };
+    Object.defineProperty(globalThis, "__wazzupVeil", hidden(applyVeil));
+  }
+
   const alwaysPersistent = (target) => {
     if (target) {
       target.persist = () => Promise.resolve(true);
