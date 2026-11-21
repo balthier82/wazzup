@@ -36,6 +36,10 @@ def collect():
                     singles.setdefault(match.group(1), relative)
             for match in CONSTANT.finditer(text):
                 singles.setdefault(match.group(1), relative)
+    shortcuts = (SOURCES / "shortcuts.rs").read_text(encoding="utf-8")
+    for literal in re.findall(r'"((?:[^"\\]|\\.)*)"', shortcuts):
+        if literal and not literal.startswith("<") and literal not in {"F5", "main"}:
+            singles.setdefault(literal, pathlib.Path("src/shortcuts.rs"))
     for key in [message for message in singles if message.endswith("-symbolic")]:
         singles.pop(key, None)
     for key in UNTRANSLATED:

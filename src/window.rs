@@ -207,8 +207,26 @@ impl MainWindow {
             .website("https://github.com/balthier82/wazzup")
             .issue_url("https://github.com/balthier82/wazzup/issues")
             .comments(t("WhatsApp on your GNOME desktop"))
+            .debug_info(
+                crate::diagnostics::Scrubber::for_this_session()
+                    .clean(&crate::diagnostics::environment()),
+            )
+            .debug_info_filename("wazzup-debug.txt")
             .build()
             .present(Some(&self.window));
+    }
+
+    pub fn show_shortcuts(&self) {
+        if !self.lock.is_locked() {
+            crate::shortcuts::window(&self.window).present();
+        }
+    }
+
+    pub fn show_report(&self) {
+        self.present();
+        if !self.lock.is_locked() {
+            crate::report_dialog::present(&self.window);
+        }
     }
 
     pub fn lock_now(&self) {
@@ -477,6 +495,8 @@ fn header_bar(title: &adw::WindowTitle, downloads: &gtk::MenuButton) -> adw::Hea
     let sections = gio::Menu::new();
     sections.append(Some(&t("Lock")), Some("app.lock"));
     sections.append(Some(&t("Preferences")), Some("app.preferences"));
+    sections.append(Some(&t("Keyboard Shortcuts")), Some("app.shortcuts"));
+    sections.append(Some(&t("Report a Problem…")), Some("app.report"));
     sections.append(Some(&t("About Wazzup")), Some("app.about"));
     menu.append_section(None, &sections);
     let ending = gio::Menu::new();

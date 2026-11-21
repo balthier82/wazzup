@@ -84,6 +84,7 @@ impl WazzupApplication {
         let tray = Rc::clone(&self.tray);
         let password = Rc::clone(&self.proxy_password);
         self.inner.connect_startup(move |_| {
+            gtk::Window::set_default_icon_name(crate::config::APP_ID);
             password.get_or_init(ProxyPassword::load);
             let preferences = store.snapshot();
             apply_theme(&preferences);
@@ -196,6 +197,24 @@ impl WazzupApplication {
             .build();
 
         let window = Rc::clone(&self.window);
+        let shortcuts = gio::ActionEntry::builder("shortcuts")
+            .activate(move |_: &adw::Application, _, _| {
+                if let Some(main_window) = window.get() {
+                    main_window.show_shortcuts();
+                }
+            })
+            .build();
+
+        let window = Rc::clone(&self.window);
+        let report = gio::ActionEntry::builder("report")
+            .activate(move |_: &adw::Application, _, _| {
+                if let Some(main_window) = window.get() {
+                    main_window.show_report();
+                }
+            })
+            .build();
+
+        let window = Rc::clone(&self.window);
         let lock = gio::ActionEntry::builder("lock")
             .activate(move |_: &adw::Application, _, _| {
                 if let Some(main_window) = window.get() {
@@ -214,14 +233,26 @@ impl WazzupApplication {
             )
             .build();
 
-        self.inner
-            .add_action_entries([present, open_notification, preferences, about, lock, quit]);
+        self.inner.add_action_entries([
+            present,
+            open_notification,
+            preferences,
+            about,
+            shortcuts,
+            report,
+            lock,
+            quit,
+        ]);
         self.inner
             .set_accels_for_action("app.quit", &["<Control>q"]);
         self.inner
             .set_accels_for_action("app.preferences", &["<Control>comma"]);
         self.inner
             .set_accels_for_action("app.lock", &["<Control>l"]);
+        self.inner.set_accels_for_action(
+            "app.shortcuts",
+            &["<Control>question", "<Control><Shift>question", "F1"],
+        );
         self.inner
             .set_accels_for_action("win.reload", &["F5", "<Control>r"]);
     }

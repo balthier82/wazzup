@@ -46,6 +46,10 @@ msgstr ""
 msgid "Appearance"
 msgstr ""
 
+#: src/shortcuts.rs
+msgid "Application"
+msgstr ""
+
 #: src/preferences_dialog.rs
 msgid "Ask for the passcode every time Wazzup opens"
 msgstr ""
@@ -118,8 +122,16 @@ msgstr ""
 msgid "Content"
 msgstr ""
 
+#: src/report_dialog.rs
+msgid "Copy"
+msgstr ""
+
 #: src/preferences_dialog.rs
 msgid "Current passcode"
+msgstr ""
+
+#: src/shortcuts.rs
+msgid "Cut"
 msgstr ""
 
 #: src/preferences_dialog.rs
@@ -130,12 +142,20 @@ msgstr ""
 msgid "Dark, for light top bars"
 msgstr ""
 
+#: src/report_dialog.rs
+msgid "Describe what happened:"
+msgstr ""
+
 #: src/downloads/panel.rs
 msgid "Download complete"
 msgstr ""
 
 #: src/downloads/panel.rs
 msgid "Downloads"
+msgstr ""
+
+#: src/shortcuts.rs
+msgid "Editing"
 msgstr ""
 
 #: src/lock/screen.rs
@@ -176,6 +196,14 @@ msgstr ""
 
 #: src/preferences_dialog.rs
 msgid "Keep running when closed"
+msgstr ""
+
+#: src/window.rs
+msgid "Keyboard Shortcuts"
+msgstr ""
+
+#: src/shortcuts.rs
+msgid "Keyboard shortcuts"
 msgstr ""
 
 #: src/preferences_dialog.rs
@@ -294,6 +322,10 @@ msgstr ""
 msgid "Open Anyway"
 msgstr ""
 
+#: src/report_dialog.rs
+msgid "Open Issue Page"
+msgstr ""
+
 #: src/tray/mod.rs
 msgid "Open Wazzup"
 msgstr ""
@@ -306,6 +338,10 @@ msgstr ""
 msgid "Open without showing the window"
 msgstr ""
 
+#: src/shortcuts.rs
+msgid "Page"
+msgstr ""
+
 #: src/lock/screen.rs
 msgid "Passcode"
 msgstr ""
@@ -316,6 +352,10 @@ msgstr ""
 
 #: src/preferences_dialog.rs
 msgid "Password"
+msgstr ""
+
+#: src/shortcuts.rs
+msgid "Paste"
 msgstr ""
 
 #: src/preferences_dialog.rs
@@ -338,6 +378,10 @@ msgstr ""
 msgid "Quit"
 msgstr ""
 
+#: src/report_dialog.rs
+msgid "Recent log:"
+msgstr ""
+
 #: src/window.rs
 msgid "Reload"
 msgstr ""
@@ -354,6 +398,14 @@ msgstr ""
 msgid "Repeat new passcode"
 msgstr ""
 
+#: src/report_dialog.rs
+msgid "Report a Problem"
+msgstr ""
+
+#: src/window.rs
+msgid "Report a Problem…"
+msgstr ""
+
 #: src/window.rs
 msgid "Retry Now"
 msgstr ""
@@ -368,6 +420,10 @@ msgstr ""
 
 #: src/preferences_dialog.rs
 msgid "Screen sharing"
+msgstr ""
+
+#: src/shortcuts.rs
+msgid "Select all"
 msgstr ""
 
 #: src/preferences_dialog.rs
@@ -468,6 +524,10 @@ msgstr ""
 
 #: src/preferences_dialog.rs
 msgid "Theme"
+msgstr ""
+
+#: src/report_dialog.rs
+msgid "This is everything that will be shared. Personal paths, phone numbers and email addresses have been hidden. Your chats are never included."
 msgstr ""
 
 #: src/lock/screen.rs

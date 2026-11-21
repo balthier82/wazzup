@@ -37,6 +37,9 @@ msgstr "Bloqueo de la aplicación"
 msgid "Appearance"
 msgstr "Apariencia"
 
+msgid "Application"
+msgstr "Aplicación"
+
 msgid "Ask for the passcode every time Wazzup opens"
 msgstr "Pedir el código cada vez que se abra Wazzup"
 
@@ -91,8 +94,14 @@ msgstr "Conexión perdida. Reintentando en {seconds} s"
 msgid "Content"
 msgstr "Contenido"
 
+msgid "Copy"
+msgstr "Copiar"
+
 msgid "Current passcode"
 msgstr "Código actual"
+
+msgid "Cut"
+msgstr "Cortar"
 
 msgid "Dark"
 msgstr "Oscuro"
@@ -100,11 +109,17 @@ msgstr "Oscuro"
 msgid "Dark, for light top bars"
 msgstr "Oscuro, para barras superiores claras"
 
+msgid "Describe what happened:"
+msgstr "Describe lo que ocurrió:"
+
 msgid "Download complete"
 msgstr "Descarga completada"
 
 msgid "Downloads"
 msgstr "Descargas"
+
+msgid "Editing"
+msgstr "Edición"
 
 msgid "Enter your passcode to continue"
 msgstr "Introduce tu código para continuar"
@@ -135,6 +150,12 @@ msgstr "Puede ejecutar programas en tu equipo. Ábrelo solo si confías en quien
 
 msgid "Keep running when closed"
 msgstr "Seguir activo al cerrar"
+
+msgid "Keyboard Shortcuts"
+msgstr "Atajos de teclado"
+
+msgid "Keyboard shortcuts"
+msgstr "Atajos de teclado"
 
 msgid "Language"
 msgstr "Idioma"
@@ -223,6 +244,9 @@ msgstr "Abrir"
 msgid "Open Anyway"
 msgstr "Abrir de todos modos"
 
+msgid "Open Issue Page"
+msgstr "Abrir página de incidencias"
+
 msgid "Open Wazzup"
 msgstr "Abrir Wazzup"
 
@@ -232,6 +256,9 @@ msgstr "¿Abrir este archivo?"
 msgid "Open without showing the window"
 msgstr "Abrir sin mostrar la ventana"
 
+msgid "Page"
+msgstr "Página"
+
 msgid "Passcode"
 msgstr "Código"
 
@@ -240,6 +267,9 @@ msgstr "Código no modificado"
 
 msgid "Password"
 msgstr "Contraseña"
+
+msgid "Paste"
+msgstr "Pegar"
 
 msgid "Port"
 msgstr "Puerto"
@@ -256,6 +286,9 @@ msgstr "Proxy"
 msgid "Quit"
 msgstr "Salir"
 
+msgid "Recent log:"
+msgstr "Registro reciente:"
+
 msgid "Reload"
 msgstr "Recargar"
 
@@ -268,6 +301,12 @@ msgstr "Quitar código"
 msgid "Repeat new passcode"
 msgstr "Repite el código nuevo"
 
+msgid "Report a Problem"
+msgstr "Informar de un problema"
+
+msgid "Report a Problem…"
+msgstr "Informar de un problema…"
+
 msgid "Retry Now"
 msgstr "Reintentar ahora"
 
@@ -279,6 +318,9 @@ msgstr "Privacidad en pantalla"
 
 msgid "Screen sharing"
 msgstr "Compartir pantalla"
+
+msgid "Select all"
+msgstr "Seleccionar todo"
 
 msgid "Sender and message"
 msgstr "Remitente y mensaje"
@@ -354,6 +396,9 @@ msgstr "Los dos códigos nuevos no coinciden."
 
 msgid "Theme"
 msgstr "Tema"
+
+msgid "This is everything that will be shared. Personal paths, phone numbers and email addresses have been hidden. Your chats are never included."
+msgstr "Esto es todo lo que se compartirá. Se han ocultado las rutas personales, los números de teléfono y las direcciones de correo. Tus chats nunca se incluyen."
 
 msgid "Too many attempts"
 msgstr "Demasiados intentos"
