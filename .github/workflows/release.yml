@@ -69,7 +69,7 @@ jobs:
         run: LD_LIBRARY_PATH="${CEF_PATH}" cargo test
 
       - name: Build AppImage
-        run: tools/build-appimage.sh
+        run: python3 waz-cmd.py appimage
 
       - name: Keep the AppImage
         uses: actions/upload-artifact@v4
