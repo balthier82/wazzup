@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.balthier82.Wazzup</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Wazzup</name>
+  <summary>Chat on WhatsApp from your GNOME desktop</summary>
+  <summary xml:lang="it">Chatta su WhatsApp dal tuo desktop GNOME</summary>
+  <summary xml:lang="fr">Discutez sur WhatsApp depuis votre bureau GNOME</summary>
+  <summary xml:lang="de">Chatten Sie mit WhatsApp auf Ihrem GNOME-Desktop</summary>
+  <summary xml:lang="es">Chatea en WhatsApp desde tu escritorio GNOME</summary>
+  <description>
+    <p>Wazzup brings WhatsApp Web into a native GNOME window, with voice and video calls, desktop notifications and an unread badge.</p>
+    <p xml:lang="it">Wazzup porta WhatsApp Web in una finestra GNOME nativa, con chiamate vocali e video, notifiche sul desktop e contatore dei messaggi non letti.</p>
+    <ul>
+      <li>Passcode lock with automatic locking when idle or hidden</li>
+      <li>Blur chats until you point at them</li>
+      <li>Downloads panel, spell checking and proxy support</li>
+      <li>Top bar icon, light and dark style, five interface languages</li>
+    </ul>
+    <p>Wazzup is not affiliated with WhatsApp or Meta.</p>
+  </description>
+  <launchable type="desktop-id">io.github.balthier82.Wazzup.desktop</launchable>
+  <developer id="io.github.balthier82">
+    <name>balthier82</name>
+  </developer>
+  <url type="homepage">https://github.com/balthier82/wazzup</url>
+  <url type="bugtracker">https://github.com/balthier82/wazzup/issues</url>
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-chat">intense</content_attribute>
+    <content_attribute id="social-audio">intense</content_attribute>
+  </content_rating>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <categories>
+    <category>Network</category>
+    <category>InstantMessaging</category>
+  </categories>
+  <releases>
+    <release version="0.1.0" date="2026-11-21"/>
+  </releases>
+</component>

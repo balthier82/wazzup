@@ -103,14 +103,17 @@ impl RuntimeLayout {
 }
 
 fn engine_dir() -> PathBuf {
-    std::env::var_os("WAZZUP_ENGINE_DIR")
-        .map(PathBuf::from)
-        .or_else(|| {
-            std::env::current_exe()
-                .ok()
-                .and_then(|exe| exe.parent().map(Path::to_path_buf))
-        })
-        .unwrap_or_default()
+    if let Some(configured) = std::env::var_os("WAZZUP_ENGINE_DIR") {
+        return PathBuf::from(configured);
+    }
+    let program_folder = std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(Path::to_path_buf))
+        .unwrap_or_default();
+    [program_folder.join("../lib"), program_folder.clone()]
+        .into_iter()
+        .find(|candidate| candidate.join("icudtl.dat").is_file())
+        .unwrap_or(program_folder)
 }
 
 fn inspector_port() -> i32 {

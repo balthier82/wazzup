@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+
+env:
+  CEF_VERSION: "156.7.0+156.0.31"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  appimage:
+    name: AppImage (${{ matrix.architecture }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            architecture: x86_64
+          - runner: ubuntu-24.04-arm
+            architecture: aarch64
+    runs-on: ${{ matrix.runner }}
+    env:
+      CEF_PATH: ${{ github.workspace }}/.cef
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            build-essential cmake ninja-build pkg-config patchelf file curl \
+            desktop-file-utils appstream librsvg2-common \
+            libgtk-4-dev libadwaita-1-dev \
+            libnss3 libnspr4 libatk1.0-0t64 libatk-bridge2.0-0t64 libcups2t64 \
+            libdrm2 libgbm1 libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 \
+            libasound2t64 libpango-1.0-0 libcairo2 libdbus-1-3
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.architecture }}
+
+      - name: Use the version from the tag
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          echo "WAZZUP_VERSION=${version}" >> "${GITHUB_ENV}"
+          sed -i "0,/^version = .*/s//version = \"${version}\"/" Cargo.toml
+
+      - name: Download the Chromium engine
+        run: |
+          cargo install export-cef-dir --version "${CEF_VERSION}" --locked
+          export-cef-dir --force "${CEF_PATH}"
+
+      - name: Validate metadata
+        run: |
+          desktop-file-validate data/io.github.balthier82.Wazzup.desktop
+          appstreamcli validate --no-net --pedantic data/io.github.balthier82.Wazzup.metainfo.xml || appstreamcli validate --no-net data/io.github.balthier82.Wazzup.metainfo.xml
+
+      - name: Run tests
+        run: LD_LIBRARY_PATH="${CEF_PATH}" cargo test
+
+      - name: Build AppImage
+        run: tools/build-appimage.sh
+
+      - name: Keep the AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: wazzup-${{ matrix.architecture }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Draft release
+    needs: appimage
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Collect AppImages
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          name: Wazzup ${{ github.ref_name }}
+          generate_release_notes: true
+          files: dist/*

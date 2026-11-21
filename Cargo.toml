@@ -2,6 +2,9 @@
 name = "wazzup"
 version = "0.1.0"
 edition = "2024"
+description = "WhatsApp on your GNOME desktop"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/balthier82/wazzup"
 
 [dependencies]
 adw = { version = "0.9.2", package = "libadwaita", features = ["v1_5"] }
@@ -16,3 +19,8 @@ serde_json = "1.0.154"
 toml = "1.2.2"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 4
+strip = true
