@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=Wazzup
+GenericName=WhatsApp Client
+Comment=Chat on WhatsApp from your GNOME desktop
+Exec=wazzup %U
+Icon=io.github.balthier82.Wazzup
+Terminal=false
+Categories=Network;InstantMessaging;Chat;GTK;GNOME;
+Keywords=whatsapp;chat;messages;
+MimeType=x-scheme-handler/whatsapp;
+StartupNotify=true
+StartupWMClass=io.github.balthier82.Wazzup
+DBusActivatable=false
+X-GNOME-UsesNotifications=true
